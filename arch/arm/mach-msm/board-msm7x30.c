@@ -36,6 +36,8 @@
 #include <mach/vreg.h>
 #include "devices.h"
 #include "proc_comm.h"
+#include "socinfo.h"
+#include "clock.h"
 
 extern struct sys_timer msm_timer;
 
