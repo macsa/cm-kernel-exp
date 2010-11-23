@@ -66,6 +66,7 @@
 #include <linux/string.h>
 #include <linux/workqueue.h>
 #include <linux/spinlock_types.h>
+#include <linux/slab.h>
 
 #include "npa.h"
 #include "npa_resource.h"
