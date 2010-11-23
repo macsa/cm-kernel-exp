@@ -13,7 +13,11 @@
 #include "linux/types.h"
 
 #include <mach/board.h>
+#ifdef CONFIG_MSM_CAMERA_LEGACY
 #include <media/msm_camera.h>
+#else
+#include <media/msm_camera-7x30.h>
+#endif
 
 #ifdef CONFIG_MSM_CAMERA_DEBUG
 #define CDBG(fmt, args...) printk(KERN_INFO "msm_camera: " fmt, ##args)
@@ -40,6 +44,7 @@ enum vfe_resp_msg {
 	VFE_EVENT,
 	VFE_MSG_GENERAL,
 	VFE_MSG_SNAPSHOT,
+#ifdef CONFIG_MSM_CAMERA_LEGACY
 #ifndef CONFIG_720P_CAMERA
 	VFE_MSG_OUTPUT1,
 	VFE_MSG_OUTPUT2,
@@ -51,6 +56,22 @@ enum vfe_resp_msg {
 #endif
 	VFE_MSG_STATS_AF,
 	VFE_MSG_STATS_WE,
+#else /* CONFIG_MSM_CAMERA_7X30 */
+	VFE_MSG_OUTPUT_P,   /* preview (continuous mode ) */
+	VFE_MSG_OUTPUT_T,   /* thumbnail (snapshot mode )*/
+	VFE_MSG_OUTPUT_S,   /* main image (snapshot mode )*/
+	VFE_MSG_OUTPUT_V,   /* video   (continuous mode ) */
+	VFE_MSG_STATS_AEC,
+	VFE_MSG_STATS_AF,
+	VFE_MSG_STATS_AWB,
+	VFE_MSG_STATS_RS,
+	VFE_MSG_STATS_CS,
+	VFE_MSG_STATS_IHIST,
+	VFE_MSG_STATS_SKIN,
+	VFE_MSG_STATS_WE, /* AEC + AWB */
+#endif
+
+
 };
 
 #define VFE31_OUTPUT_MODE_PT (0x1 << 0)
