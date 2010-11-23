@@ -36,6 +36,8 @@ struct curcial_oj_platform_data {
 #endif
 
 	unsigned irq_gpio;
+	unsigned rst_gpio;
+	uint8_t  ledval;
 
 };
 void curcial_oj_send_key(unsigned int code, int value);
