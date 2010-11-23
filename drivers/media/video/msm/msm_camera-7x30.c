@@ -28,6 +28,7 @@
 #include <linux/init.h>
 #include <mach/board.h>
 
+#include <linux/dma-mapping.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/list.h>
@@ -1683,7 +1684,6 @@ static int msm_get_pic(struct msm_sync *sync, void __user *arg)
         /* HACK: Invalidate buffer */
         dmac_unmap_area((void*)pic_pmem_region.kvaddr, pic_pmem_region.len,
                         DMA_FROM_DEVICE);
-        pic_pmem_region.info.vfe_can_write = 0;
 
 	/* HTC end */
 
