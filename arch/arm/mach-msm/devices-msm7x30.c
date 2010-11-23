@@ -28,7 +28,7 @@
 
 #include <asm/mach/flash.h>
 
-#include "clock-pcom.h"
+#include "clock.h"
 
 #include <mach/mmc.h>
 
@@ -673,7 +673,7 @@ struct clk msm_clocks_7x30[] = {
 	CLK_PCOM("hdmi_clk",	HDMI_CLK,	NULL, 0),
 	CLK_PCOM("imem_clk",	IMEM_CLK,	NULL, OFF),
 	CLK_PCOM("i2c_clk",	I2C_CLK,	&msm_device_i2c.dev, OFF),
-	CLK_PCOM("i2c_clk",	I2C_2_CLK,	&msm_device_i2c2.dev, OFF),
+	CLK_PCOM("i2c_clk",	I2C_2_CLK,	&msm_device_i2c_2.dev, OFF),
 	CLK_PCOM("jpeg_clk",	JPEG_CLK,	NULL, OFF),
 	CLK_PCOM("jpeg_pclk",	JPEG_P_CLK,	NULL, OFF),
 	CLK_PCOM("lpa_codec_clk",	LPA_CODEC_CLK,		NULL, 0),
