@@ -240,6 +240,24 @@ void __init msm_init_irq(void);
 void __init msm_clock_init(struct clk *clock_tbl, unsigned num_clocks);
 void __init msm_acpu_clock_init(struct msm_acpu_clock_platform_data *);
 
+#if defined(CONFIG_MSM_RMT_STORAGE_SERVER)
+struct shared_ramfs_entry {
+        uint32_t client_id;     /* Client id to uniquely identify a client */
+        uint32_t base_addr;     /* Base address of shared RAMFS memory */
+        uint32_t size;          /* Size of the shared RAMFS memory */
+        uint32_t server_status; /* This will be initialized to 1 when
+                                   remote storage RPC server is available */
+};
+struct shared_ramfs_table {
+        uint32_t magic_id;      /* Identify RAMFS details in SMEM */
+        uint32_t version;       /* Version of shared_ramfs_table */
+        uint32_t entries;       /* Total number of valid entries   */
+        struct shared_ramfs_entry ramfs_entry[3];       /* List all entries */
+};
+
+int __init rmt_storage_add_ramfs(void);
+#endif
+
 #if defined(CONFIG_USB_FUNCTION_MSM_HSUSB) || defined(CONFIG_USB_MSM_72K)
 void msm_hsusb_set_vbus_state(int online);
 /* START: add USB connected notify function */
