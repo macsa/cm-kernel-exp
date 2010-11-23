@@ -35,6 +35,12 @@ enum {
 static int msm_timer_debug_mask;
 module_param_named(debug_mask, msm_timer_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
+#ifdef CONFIG_ARCH_MSM7X30
+#define MSM_DGT_BASE (MSM_TMR_BASE + 0x24)
+#else
+#define MSM_DGT_BASE (MSM_GPT_BASE + 0x10)
+#endif
+
 #define TIMER_MATCH_VAL         0x0000
 #define TIMER_COUNT_VAL         0x0004
 #define TIMER_ENABLE            0x0008
@@ -47,11 +53,11 @@ module_param_named(debug_mask, msm_timer_debug_mask, int, S_IRUGO | S_IWUSR | S_
 
 #define GPT_HZ 32768
 
-#if defined(CONFIG_ARCH_QSD8X50)
-#define DGT_HZ (19200000 / 4) /* 19.2 MHz / 4 by default */
+#ifdef CONFIG_ARCH_MSM7X30
+#define DGT_HZ 6144000 /* Uses LPXO/4 (24.576 MHz / 4) */
 #define MSM_DGT_SHIFT (0)
-#elif defined(CONFIG_ARCH_MSM7X30)
-#define DGT_HZ (24576000 / 4) /* 24.576 MHz (LPXO) / 4 by default */
+#elif defined(CONFIG_ARCH_MSM_SCORPION)
+#define DGT_HZ (19200000 / 4) /* 19.2 MHz / 4 by default */
 #define MSM_DGT_SHIFT (0)
 #else
 #define DGT_HZ 19200000 /* 19.2 MHz or 600 KHz after shift */
@@ -215,7 +221,7 @@ static inline int check_timeout(struct msm_clock *clock, uint32_t timeout)
 	return (int32_t)(msm_read_timer_count(clock) - timeout) <= 0;
 }
 
-#ifndef CONFIG_ARCH_MSM_SCORPION
+#ifndef CONFIG_MSM_N_WAY_SMD
 
 static uint32_t msm_timer_sync_smem_clock(int exit_sleep)
 {
@@ -569,7 +575,11 @@ static struct msm_clock msm_clocks[] = {
 			.dev_id  = &msm_clocks[0].clockevent,
 			.irq     = INT_GP_TIMER_EXP
 		},
+#if defined(CONFIG_ARCH_MSM7X30)
+		.regbase = MSM_TMR_BASE + 4,
+#else
 		.regbase = MSM_GPT_BASE,
+#endif
 		.freq = GPT_HZ,
 		.flags   =
 			MSM_CLOCK_FLAGS_UNSTABLE_COUNT |
