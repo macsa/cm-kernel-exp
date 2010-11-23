@@ -32,7 +32,7 @@
 #include <mach/qdsp5v2/msm_lpa.h>
 #include <linux/akm8975.h>
 #include <linux/bma150.h>
-#include <linux/capella_cm3602.h>
+#include <linux/capella_cm3602_htc.h>
 #include <linux/atmel_qt602240.h>
 #include <linux/curcial_oj.h>
 #include <linux/leds-pm8058.h>
@@ -2617,7 +2617,7 @@ static void __init vision_init(void)
 	if (socinfo_init() < 0)
 		printk(KERN_ERR "%s: socinfo_init() failed!\n", __func__);
 
-	msm_clock_init();
+	msm_clock_init(msm_clocks_7x30, msm_num_clocks_7x30);
 
 	#ifndef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
 	/* for bcm */
