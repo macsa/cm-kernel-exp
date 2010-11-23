@@ -522,4 +522,20 @@ config MCP_UCB1200_TS
 	tristate "Touchscreen interface support"
 	depends on MCP_UCB1200 && INPUT
 
+config PMIC8058
+        tristate "PMIC8058 Power Management chip"
+        depends on I2C && ARCH_MSM7X30
+        default y if I2C && ARCH_MSM7X30
+        select MFD_CORE
+        help
+          Say yes here for Qualcomm PM8058 chip.
+
+config MARIMBA_TSADC
+        tristate "Support for Marimba Touchscreen ADC"
+        depends on MARIMBA_CORE
+        default y if MARIMBA_CORE
+        help
+          Say yes here if you want to include support for TSADC in the
+          Qualcomm Marimba chip.
+
 endmenu
