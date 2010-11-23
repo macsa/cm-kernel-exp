@@ -91,6 +91,10 @@ struct gpio_event_matrix_info {
 	ktime_t debounce_delay;
 	ktime_t poll_time;
 	unsigned flags;
+	void (*setup_ninputs_gpio)(void);
+	/* disable some gpio as wakeup source */
+	unsigned int notintr_gpios;
+	unsigned int detect_phone_status;
 };
 
 /* Directly connected inputs and outputs */
@@ -107,6 +111,8 @@ struct gpio_event_direct_entry {
 	uint32_t gpio:16;
 	uint32_t code:10;
 	uint32_t dev:6;
+	bool	 wakeup;
+	bool     check_call_status;
 };
 
 /* inputs */
@@ -121,6 +127,8 @@ struct gpio_event_input_info {
 	uint16_t type;
 	const struct gpio_event_direct_entry *keymap;
 	size_t keymap_size;
+	void (*setup_input_gpio)(void);
+	void (*set_qty_irq)(uint8_t);
 };
 
 /* outputs */
@@ -169,4 +177,6 @@ uint16_t gpio_axis_4bit_gray_map(
 uint16_t gpio_axis_5bit_singletrack_map(
 			struct gpio_event_axis_info *info, uint16_t in);
 
+int gpio_event_get_phone_call_status(void);
+int gpio_event_get_fm_radio_status(void);
 #endif
