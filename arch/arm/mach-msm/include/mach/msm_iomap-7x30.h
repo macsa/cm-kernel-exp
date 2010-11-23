@@ -159,4 +159,6 @@
 #define MSM_PMIC_SSBI_PHYS    0xAD900000
 #define MSM_PMIC_SSBI_SIZE    SZ_4K
 
+#define MSM_NAND_PHYS		0xA0200000
+
 #endif
