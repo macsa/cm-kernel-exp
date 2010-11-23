@@ -248,6 +248,34 @@ config SPI_QSD
 	default n
 	depends on ARCH_MSM_SCORPION
 
+config SPI_QSD_NEW
+        tristate "QSD SPI support"
+        default n
+        depends on SPI_QSD
+        help
+          none
+
+config SPI_CRUCIAL_OJ
+        tristate "SPI support for CRUCIAL OJ"
+        default n
+        depends on ARCH_MSM7X30
+        help
+          SPI driver for CRUCIAL OJ
+
+config SPI_TOUCHSCREEN_NTRIG
+        tristate "SPI support for Touchscreen"
+        default y
+        depends on ARCH_MSM7X30
+        help
+                SPI driver for N-trig Touchscreen
+
+config SPI_AIC3254
+        tristate "TI AIC3254 SPI support"
+        default n
+        depends on ARCH_MSM7X30
+        help
+          TI AIC3254 is external codec for audio RX
+
 config SPI_S3C24XX
 	tristate "Samsung S3C24XX series SPI"
 	depends on ARCH_S3C2410 && EXPERIMENTAL
