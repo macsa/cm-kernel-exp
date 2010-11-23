@@ -329,6 +329,12 @@ config SENSORS_AKM8973
 	help
 	 AKM8973 Compass Driver implemented by HTC.
 
+config SENSORS_AKM8975
+        tristate "AKM8975 Compass Driver"
+        depends on I2C
+        help
+         AKM8975 Compass Driver implemented by HTC.
+
 config SENSORS_AKM8976
 	tristate "AKM8976 Compass Driver"
 	depends on I2C
@@ -409,6 +415,16 @@ config SENSORS_BMA150_SPI
 	help
 	  BMA150 G-sensor Driver implemented by HTC.
 
+config PMIC8058_PWM
+        tristate "Qualcomm PM8058 PWM support"
+        depends on PMIC8058
+        default y
+        help
+          This option enables device driver support for the PWM channels
+          on Qualcomm PM8058 chip. Pulse Width Modulation is used for
+          purposes including software controlled brightness of backlight,
+          motor control, and waveform generation.
+
 config APANIC
 	bool "Android kernel panic diagnostics driver"
 	default n
@@ -428,6 +444,5 @@ source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
 source "drivers/misc/iwmc3200top/Kconfig"
-source "drivers/misc/video_core/720p/Kconfig"
 
 endif # MISC_DEVICES
