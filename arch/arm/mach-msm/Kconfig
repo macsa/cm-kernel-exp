@@ -173,25 +173,28 @@ config MACH_TROUT
 
 config MACH_MSM7X30_SURF
 	depends on ARCH_MSM7X30
+	default n
 	bool "MSM7x30 SURF"
 	help
 	  Support for the Qualcomm MSM7x30 SURF eval board.
 
 config MACH_SWORDFISH
 	depends on ARCH_QSD8X50
-	default y
+	default n
 	bool "Swordfish Board (QCT SURF8250)"
 	help
 	  Support for the Qualcomm SURF8250 eval board.
 
 config MACH_QSD8X50_SURF
 	depends on ARCH_QSD8X50
+	default n
 	bool "QSD8x50 SURF"
 	help
 	  Support for the Qualcomm QSD8x50 SURF eval board.
 
 config MACH_QSD8X50A_ST1_5
 	depends on ARCH_QSD8X50
+	default n
 	select MSM_SOC_REV_A
 	bool "QSD8x50A ST1.5"
 	help
