@@ -30,7 +30,6 @@
 /*#define DEBUG*/
 
 #include <linux/pm_qos_params.h>
-#include <linux/plist.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/slab.h>
@@ -50,53 +49,58 @@
  * held, taken with _irqsave.  One lock to rule them all
  */
 struct pm_qos_request_list {
-	struct plist_node list;
+	struct list_head list;
+	union {
+		s32 value;
+		s32 usec;
+		s32 kbps;
+	};
 	int pm_qos_class;
 };
 
-enum pm_qos_type {
-	PM_QOS_MAX,		/* return the largest value */
-	PM_QOS_MIN		/* return the smallest value */
-};
+static s32 max_compare(s32 v1, s32 v2);
+static s32 min_compare(s32 v1, s32 v2);
 
 struct pm_qos_object {
-	struct plist_head requests;
+	struct pm_qos_request_list requests;
 	struct blocking_notifier_head *notifiers;
 	struct miscdevice pm_qos_power_miscdev;
 	char *name;
 	s32 default_value;
-	enum pm_qos_type type;
+	atomic_t target_value;
+	s32 (*comparitor)(s32, s32);
 };
-
-static DEFINE_SPINLOCK(pm_qos_lock);
 
 static struct pm_qos_object null_pm_qos;
 static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
 static struct pm_qos_object cpu_dma_pm_qos = {
-	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
+	.requests = {LIST_HEAD_INIT(cpu_dma_pm_qos.requests.list)},
 	.notifiers = &cpu_dma_lat_notifier,
 	.name = "cpu_dma_latency",
 	.default_value = 2000 * USEC_PER_SEC,
-	.type = PM_QOS_MIN,
+	.target_value = ATOMIC_INIT(2000 * USEC_PER_SEC),
+	.comparitor = min_compare
 };
 
 static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
 static struct pm_qos_object network_lat_pm_qos = {
-	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
+	.requests = {LIST_HEAD_INIT(network_lat_pm_qos.requests.list)},
 	.notifiers = &network_lat_notifier,
 	.name = "network_latency",
 	.default_value = 2000 * USEC_PER_SEC,
-	.type = PM_QOS_MIN
+	.target_value = ATOMIC_INIT(2000 * USEC_PER_SEC),
+	.comparitor = min_compare
 };
 
 
 static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
 static struct pm_qos_object network_throughput_pm_qos = {
-	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
+	.requests = {LIST_HEAD_INIT(network_throughput_pm_qos.requests.list)},
 	.notifiers = &network_throughput_notifier,
 	.name = "network_throughput",
 	.default_value = 0,
-	.type = PM_QOS_MAX,
+	.target_value = ATOMIC_INIT(0),
+	.comparitor = max_compare
 };
 
 
@@ -106,6 +110,8 @@ static struct pm_qos_object *pm_qos_array[] = {
 	&network_lat_pm_qos,
 	&network_throughput_pm_qos
 };
+
+static DEFINE_SPINLOCK(pm_qos_lock);
 
 static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *f_pos);
@@ -118,55 +124,46 @@ static const struct file_operations pm_qos_power_fops = {
 	.release = pm_qos_power_release,
 };
 
-/* unlocked internal variant */
-static inline int pm_qos_get_value(struct pm_qos_object *o)
+/* static helper functions */
+static s32 max_compare(s32 v1, s32 v2)
 {
-	if (plist_head_empty(&o->requests))
-		return o->default_value;
-
-	switch (o->type) {
-	case PM_QOS_MIN:
-		return plist_last(&o->requests)->prio;
-
-	case PM_QOS_MAX:
-		return plist_first(&o->requests)->prio;
-
-	default:
-		/* runtime check for not using enum */
-		BUG();
-	}
+	return max(v1, v2);
 }
 
-static void update_target(struct pm_qos_object *o, struct plist_node *node,
-			  int del, int value)
+static s32 min_compare(s32 v1, s32 v2)
 {
+	return min(v1, v2);
+}
+
+
+static void update_target(int pm_qos_class)
+{
+	s32 extreme_value;
+	struct pm_qos_request_list *node;
 	unsigned long flags;
-	int prev_value, curr_value;
+	int call_notifier = 0;
 
 	spin_lock_irqsave(&pm_qos_lock, flags);
-	prev_value = pm_qos_get_value(o);
-	/* PM_QOS_DEFAULT_VALUE is a signal that the value is unchanged */
-	if (value != PM_QOS_DEFAULT_VALUE) {
-		/*
-		 * to change the list, we atomically remove, reinit
-		 * with new value and add, then see if the extremal
-		 * changed
-		 */
-		plist_del(node, &o->requests);
-		plist_node_init(node, value);
-		plist_add(node, &o->requests);
-	} else if (del) {
-		plist_del(node, &o->requests);
-	} else {
-		plist_add(node, &o->requests);
+	extreme_value = pm_qos_array[pm_qos_class]->default_value;
+	list_for_each_entry(node,
+			&pm_qos_array[pm_qos_class]->requests.list, list) {
+		extreme_value = pm_qos_array[pm_qos_class]->comparitor(
+				extreme_value, node->value);
 	}
-	curr_value = pm_qos_get_value(o);
+	if (atomic_read(&pm_qos_array[pm_qos_class]->target_value) !=
+			extreme_value) {
+		call_notifier = 1;
+		atomic_set(&pm_qos_array[pm_qos_class]->target_value,
+				extreme_value);
+		pr_debug(KERN_ERR "new target for qos %d is %d\n", pm_qos_class,
+			atomic_read(&pm_qos_array[pm_qos_class]->target_value));
+	}
 	spin_unlock_irqrestore(&pm_qos_lock, flags);
 
-	if (prev_value != curr_value)
-		blocking_notifier_call_chain(o->notifiers,
-					     (unsigned long)curr_value,
-					     NULL);
+	if (call_notifier)
+		blocking_notifier_call_chain(
+				pm_qos_array[pm_qos_class]->notifiers,
+					(unsigned long) extreme_value, NULL);
 }
 
 static int register_pm_qos_misc(struct pm_qos_object *qos)
@@ -199,14 +196,7 @@ static int find_pm_qos_object_by_minor(int minor)
  */
 int pm_qos_request(int pm_qos_class)
 {
-	unsigned long flags;
-	int value;
-
-	spin_lock_irqsave(&pm_qos_lock, flags);
-	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
-	spin_unlock_irqrestore(&pm_qos_lock, flags);
-
-	return value;
+	return atomic_read(&pm_qos_array[pm_qos_class]->target_value);
 }
 EXPORT_SYMBOL_GPL(pm_qos_request);
 
@@ -224,19 +214,21 @@ EXPORT_SYMBOL_GPL(pm_qos_request);
 struct pm_qos_request_list *pm_qos_add_request(int pm_qos_class, s32 value)
 {
 	struct pm_qos_request_list *dep;
+	unsigned long flags;
 
 	dep = kzalloc(sizeof(struct pm_qos_request_list), GFP_KERNEL);
 	if (dep) {
-		struct pm_qos_object *o =  pm_qos_array[pm_qos_class];
-		int new_value;
-
 		if (value == PM_QOS_DEFAULT_VALUE)
-			new_value = o->default_value;
+			dep->value = pm_qos_array[pm_qos_class]->default_value;
 		else
-			new_value = value;
-		plist_node_init(&dep->list, new_value);
+			dep->value = value;
 		dep->pm_qos_class = pm_qos_class;
-		update_target(o, &dep->list, 0, PM_QOS_DEFAULT_VALUE);
+
+		spin_lock_irqsave(&pm_qos_lock, flags);
+		list_add(&dep->list,
+			&pm_qos_array[pm_qos_class]->requests.list);
+		spin_unlock_irqrestore(&pm_qos_lock, flags);
+		update_target(pm_qos_class);
 	}
 
 	return dep;
@@ -254,23 +246,27 @@ EXPORT_SYMBOL_GPL(pm_qos_add_request);
  * Attempts are made to make this code callable on hot code paths.
  */
 void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
-			   s32 new_value)
+		s32 new_value)
 {
+	unsigned long flags;
+	int pending_update = 0;
 	s32 temp;
-	struct pm_qos_object *o;
 
-	if (!pm_qos_req) /*guard against callers passing in null */
-		return;
+	if (pm_qos_req) { /*guard against callers passing in null */
+		spin_lock_irqsave(&pm_qos_lock, flags);
+		if (new_value == PM_QOS_DEFAULT_VALUE)
+			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+		else
+			temp = new_value;
 
-	o = pm_qos_array[pm_qos_req->pm_qos_class];
-
-	if (new_value == PM_QOS_DEFAULT_VALUE)
-		temp = o->default_value;
-	else
-		temp = new_value;
-
-	if (temp != pm_qos_req->list.prio)
-		update_target(o, &pm_qos_req->list, 0, temp);
+		if (temp != pm_qos_req->value) {
+			pending_update = 1;
+			pm_qos_req->value = temp;
+		}
+		spin_unlock_irqrestore(&pm_qos_lock, flags);
+		if (pending_update)
+			update_target(pm_qos_req->pm_qos_class);
+	}
 }
 EXPORT_SYMBOL_GPL(pm_qos_update_request);
 
@@ -284,15 +280,19 @@ EXPORT_SYMBOL_GPL(pm_qos_update_request);
  */
 void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
 {
-	struct pm_qos_object *o;
+	unsigned long flags;
+	int qos_class;
 
 	if (pm_qos_req == NULL)
 		return;
 		/* silent return to keep pcm code cleaner */
 
-	o = pm_qos_array[pm_qos_req->pm_qos_class];
-	update_target(o, &pm_qos_req->list, 1, PM_QOS_DEFAULT_VALUE);
+	qos_class = pm_qos_req->pm_qos_class;
+	spin_lock_irqsave(&pm_qos_lock, flags);
+	list_del(&pm_qos_req->list);
 	kfree(pm_qos_req);
+	spin_unlock_irqrestore(&pm_qos_lock, flags);
+	update_target(qos_class);
 }
 EXPORT_SYMBOL_GPL(pm_qos_remove_request);
 
