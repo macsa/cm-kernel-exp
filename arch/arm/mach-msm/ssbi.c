@@ -31,7 +31,8 @@
 #include <linux/slab.h>
 
 #include <mach/msm_ssbi.h>
-#include <mach/remote_spinlock.h>
+/*#include <mach/remote_spinlock.h>*/
+#include <linux/remote_spinlock.h>
 
 /* SSBI 2.0 controller registers */
 #define SSBI2_CTL			0x0000
@@ -84,9 +85,11 @@ static inline void ssbi_writel(struct msm_ssbi *ssbi, u32 val,
 	writel(val, ssbi->base + reg);
 }
 
-//poll_for_device_ready === SSBI_STATUS_READY
-//poll_for_transfer_completed === SSBI_STATUS_MCHN_BUSY
-//poll_for_read_completed === SSBI_STATUS_RD_READY
+/*
+poll_for_device_ready === SSBI_STATUS_READY
+poll_for_transfer_completed === SSBI_STATUS_MCHN_BUSY
+poll_for_read_completed === SSBI_STATUS_RD_READY
+*/
 static int ssbi_wait_mask(struct msm_ssbi *ssbi, u32 set_mask, u32 clr_mask)
 {
 	u32 timeout = SSBI_TIMEOUT_US;
@@ -262,7 +265,8 @@ static int __init msm_ssbi_probe(struct platform_device *pdev)
 	ssbi->dev = &pdev->dev;
 	platform_set_drvdata(pdev, ssbi);
 
-	ret = remote_spin_lock_init(&ssbi->rspin_lock, pdata->rspinlock_name);
+	/*ret = remote_spin_lock_init(&ssbi->rspin_lock, pdata->rspinlock_name);*/
+	remote_spin_lock_init(&ssbi->rspin_lock, pdata->rspinlock_name);
 	if (ret) {
 		pr_err("%s: cannot init remote spinlock '%s'\n", __func__,
 		       pdata->rspinlock_name);
@@ -298,6 +302,7 @@ static struct platform_driver msm_ssbi_driver = {
 
 static int __init msm_ssbi_init(void)
 {
+	pr_info("%s()\n", __func__);
 	return platform_driver_register(&msm_ssbi_driver);
 }
 
