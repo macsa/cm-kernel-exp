@@ -222,10 +222,10 @@ void msm_set_i2c_mux(bool gpio, int *gpio_clk, int *gpio_dat)
 	}
 }
 
-static struct resource resources_i2c2[] = {
+static struct resource resources_i2c_2[] = {
 	{
 		.start	= MSM_I2C_2_PHYS,
-		.end	= MSM_I2C_2_PHYS + MSM_I2C_2_SIZE - 1,
+		.end	= MSM_I2C_2_PHYS + MSM_I2C_SIZE - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 	{
@@ -235,11 +235,11 @@ static struct resource resources_i2c2[] = {
 	},
 };
 
-struct platform_device msm_device_i2c2 = {
+struct platform_device msm_device_i2c_2 = {
 	.name		= "msm_i2c",
-	.id		= 1,
-	.num_resources	= ARRAY_SIZE(resources_i2c2),
-	.resource	= resources_i2c2,
+	.id		= 22,
+	.num_resources	= ARRAY_SIZE(resources_i2c_2),
+	.resource	= resources_i2c_2,
 };
 
 static struct resource resources_qup[] = {
@@ -252,7 +252,7 @@ static struct resource resources_qup[] = {
 	{
 		.name   = "gsbi_qup_i2c_addr",
 		.start	= MSM_GSBI_QUP_I2C_PHYS,
-		.end	= MSM_GSBI_QUP_I2C_PHYS + MSM_GSBI_QUP_I2C_SIZE - 1,
+		.end	= MSM_GSBI_QUP_I2C_PHYS + 4 - 1,
 		.flags	= IORESOURCE_MEM,
 	},
 	{
