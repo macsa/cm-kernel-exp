@@ -1,19 +1,33 @@
-/*
- * Copyright (c) 1992-2009, Code Aurora Forum. All rights reserved.
- *
- * This software is licensed under the terms of the GNU General Public
- * License version 2, as published by the Free Software Foundation, and
- * may be copied, distributed, and modified under those terms.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- */
+#ifndef QDSP5AUDPLAYCMDI_H
+#define QDSP5AUDPLAYCMDI_H
 
-#ifndef __ADSP_MODULE_AUDPLAY
-#define __ADSP_MODULE_AUDPLAY
+/*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*
+	Q D S P 5  A U D I O   P L A Y  T A S K   C O M M A N D S
+
+GENERAL DESCRIPTION
+   Command Interface for AUDPLAYTASK on QDSP5
+
+REFERENCES
+   None
+
+EXTERNALIZED FUNCTIONS
+
+  audplay_cmd_dec_data_avail
+  Send buffer to AUDPLAY task
+
+
+Copyright (c) 1992-2009, Code Aurora Forum. All rights reserved.
+
+This software is licensed under the terms of the GNU General Public
+License version 2, as published by the Free Software Foundation, and
+may be copied, distributed, and modified under those terms.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+*====*====*====*====*====*====*====*====*====*====*====*====*====*====*====*/
 
 #define AUDPLAY_CMD_BITSTREAM_DATA_AVAIL		0x0000
 #define AUDPLAY_CMD_BITSTREAM_DATA_AVAIL_LEN	\
@@ -128,57 +142,4 @@ struct audplay_cmd_outport_flush {
 	unsigned int cmd_id;
 } __attribute__((packed));
 
-
-/* messages from dsp to apps */
-
-#define AUDPLAY_MSG_DEC_NEEDS_DATA		0x0001
-#define AUDPLAY_MSG_DEC_NEEDS_DATA_MSG_LEN	\
-	sizeof(audplay_msg_dec_needs_data)
-
-struct audplay_msg_dec_needs_data {
-	/* reserved*/
-	unsigned int dec_id;
-
-	/*The read pointer offset of external memory till which bitstream
-	has been dmed in*/
-	unsigned int adecDataReadPtrOffset;
-
-	/*The buffer size of external memory. */
-	unsigned int adecDataBufSize;
-
-	unsigned int 	bitstream_free_len;
-	unsigned int	bitstream_write_ptr;
-	unsigned int	bitstream_buf_start;
-	unsigned int	bitstream_buf_len;
-} __attribute__((packed));
-
-#define AUDPLAY_UP_STREAM_INFO 0x0003
-#define AUDPLAY_UP_STREAM_INFO_LEN \
-	sizeof(struct audplay_msg_stream_info)
-
-struct audplay_msg_stream_info {
-	unsigned int decoder_id;
-	unsigned int channel_info;
-	unsigned int sample_freq;
-	unsigned int bitstream_info;
-	unsigned int bit_rate;
-} __attribute__((packed));
-
-#define AUDPLAY_MSG_BUFFER_UPDATE 0x0004
-#define AUDPLAY_MSG_BUFFER_UPDATE_LEN \
-	sizeof(struct audplay_msg_buffer_update)
-
-struct audplay_msg_buffer_update {
-	unsigned int buffer_write_count;
-	unsigned int num_of_buffer;
-	unsigned int buf0_address;
-	unsigned int buf0_length;
-	unsigned int buf1_address;
-	unsigned int buf1_length;
-} __attribute__((packed));
-
-#define AUDPLAY_UP_OUTPORT_FLUSH_ACK 0x0005
-
-#define ADSP_MESSAGE_ID 0xFFFF
-
-#endif
+#endif /* QDSP5AUDPLAYCMD_H */

@@ -26,6 +26,7 @@ struct msm_adsp_ops {
 	 */
 	void (*event)(void *driver_data, unsigned id, size_t len,
 		      void (*getevent)(void *ptr, size_t len));
+	void (*modem_event) (void *driver_data, uint32_t image);
 };
 
 /* Get, Put, Enable, and Disable are synchronous and must only
@@ -39,6 +40,7 @@ void msm_adsp_put(struct msm_adsp_module *module);
 int msm_adsp_enable(struct msm_adsp_module *module);
 int msm_adsp_disable(struct msm_adsp_module *module);
 int adsp_set_clkrate(struct msm_adsp_module *module, unsigned long clk_rate);
+int msm_adsp_disable_event_rsp(struct msm_adsp_module *module);
 
 /* Write is safe to call from interrupt context.
  */
@@ -46,7 +48,7 @@ int msm_adsp_write(struct msm_adsp_module *module,
 		   unsigned queue_id,
 		   void *data, size_t len);
 
-#if CONFIG_MSM_AMSS_VERSION >= 6350
+#if 1
 /* Command Queue Indexes */
 #define QDSP_lpmCommandQueue              0
 #define QDSP_mpuAfeQueue                  1
@@ -76,7 +78,25 @@ int msm_adsp_write(struct msm_adsp_module *module,
 #define QDSP_vfeCommandQueue              25
 #define QDSP_vfeCommandScaleQueue         26
 #define QDSP_vfeCommandTableQueue         27
+#if defined(CONFIG_ARCH_MSM7227)
+#define QDSP_vfeFtmCmdQueue               28
+#define QDSP_vfeFtmCmdScaleQueue          29
+#define QDSP_vfeFtmCmdTableQueue          30
+#define QDSP_uPJpegFtmCfgCmdQueue         31
+#define QDSP_uPJpegFtmActionCmdQueue      32
+#define QDSP_MAX_NUM_QUEUES               33
+#elif defined (CONFIG_ARCH_MSM7X30)
+#define QDSP_apuAfeQueue                  33
+#define QDSP_mpuRmtQueue                  34
+#define QDSP_uPAudPreProcAudRecCmdQueue   35
+#define QDSP_uPAudRec0BitStreamQueue      36
+#define QDSP_uPAudRec0CmdQueue            37
+#define QDSP_uPAudRec1BitStreamQueue      38
+#define QDSP_uPAudRec1CmdQueue            39
+#define QDSP_MAX_NUM_QUEUES               40
+#else
 #define QDSP_MAX_NUM_QUEUES               28
+#endif
 #else
 /* Command Queue Indexes */
 #define QDSP_lpmCommandQueue              0
