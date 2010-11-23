@@ -6,7 +6,11 @@ obj-$(CONFIG_ARCH_MSM_ARM11) += acpuclock-arm11.o idle.o
 obj-$(CONFIG_ARCH_MSM_SCORPION) += idle-v7.o
 obj-$(CONFIG_ARCH_MSM_SCORPION) += arch-init-scorpion.o
 obj-$(CONFIG_ARCH_QSD8X50) += acpuclock-qsd8x50.o
-obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o
+obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o internal_power_rail.o
+obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o arch-init-7x30.o socinfo.o
+obj-$(CONFIG_ARCH_MSM7X30) += spm.o
+obj-$(CONFIG_ARCH_MSM7X30) += rpc_hsusb.o
+
 obj-y += clock.o clock-pcom.o
 obj-y += gpio.o generic_gpio.o
 obj-y += nand_partitions.o
@@ -19,9 +23,19 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
 obj-$(CONFIG_MSM_SMD) += smd_tty.o smd_qmi.o
 obj-$(CONFIG_MSM_SMD) += last_radio_log.o
 obj-$(CONFIG_MSM_DAL) += dal.o
+obj-$(CONFIG_ARCH_MSM7X30) += dal_axi.o
+
+ifdef CONFIG_ARCH_MSM7X30
+obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter-7x30.o
+obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_servers-7x30.o
+obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_xdr.o
+obj-$(CONFIG_MSM_ONCRPCROUTER) += rpc_pmapp.o smd_rpcrouter_clients.o
+else
 obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter.o
-obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_device.o
 obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_servers.o
+endif
+obj-$(CONFIG_MSM_ONCRPCROUTER) += smd_rpcrouter_device.o
+
 obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_dog_keepalive.o
 obj-$(CONFIG_MSM_RPCSERVERS) += rpc_server_time_remote.o
 obj-$(CONFIG_MSM_ADSP) += qdsp5/
@@ -34,7 +48,7 @@ obj-$(CONFIG_MSM_REMOTE_SPINLOCK) += remote_spinlock.o
 obj-$(CONFIG_MSM_SSBI) += ssbi.o
 obj-$(CONFIG_HTC_ACOUSTIC) += htc_acoustic.o
 obj-$(CONFIG_HTC_ACOUSTIC_QSD) += htc_acoustic_qsd.o
-
+obj-$(CONFIG_MSM7KV2_AUDIO) += htc_acoustic_7x30.o htc_acdb_7x30.o
 
 obj-$(CONFIG_MACH_TROUT) += board-trout.o
 obj-$(CONFIG_MACH_TROUT) += board-trout-gpio.o
@@ -45,6 +59,7 @@ obj-$(CONFIG_MACH_TROUT) += board-trout-rfkill.o
 obj-$(CONFIG_MACH_TROUT) += board-trout-wifi.o
 obj-$(CONFIG_MACH_TROUT) += devices_htc.o
 obj-$(CONFIG_TROUT_BATTCHG) += htc_battery_trout.o
+
 obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire.o board-sapphire-gpio.o
 obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire-keypad.o board-sapphire-panel.o
 obj-$(CONFIG_MACH_SAPPHIRE) += board-sapphire-mmc.o board-sapphire-wifi.o
@@ -57,6 +72,9 @@ obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-rfkill.o htc_wifi_nvs.o htc_awb_ca
 obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-wifi.o board-mahimahi-audio.o
 obj-$(CONFIG_MACH_MAHIMAHI) += msm_vibrator.o
 obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-microp.o
+obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-tpa2018d1.o
+obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-smb329.o
+
 obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
 obj-$(CONFIG_MACH_HALIBUT) += board-halibut-keypad.o
 obj-$(CONFIG_MACH_HALIBUT) += board-halibut-panel.o fish_battery.o
@@ -68,6 +86,7 @@ obj-$(CONFIG_ARCH_MSM7X00A) += devices-msm7x00.o
 obj-$(CONFIG_MACH_MSM7X30_SURF) += board-surf7x30.o
 obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
 obj-$(CONFIG_ARCH_QSD8X50) += board-qsd8x50.o devices-qsd8x50.o
+
 obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic.o board-supersonic-panel.o
 obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic-keypad.o board-supersonic-mmc.o
 obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic-rfkill.o board-supersonic-audio.o
@@ -77,7 +96,6 @@ obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic-microp.o
 obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic-tpa2018d1.o
 obj-$(CONFIG_MACH_SUPERSONIC) += board-supersonic-tpa6130.o
 obj-$(CONFIG_MACH_SUPERSONIC) += htc_wifi_nvs.o htc_bluetooth.o
-obj-$(CONFIG_HTC_BATTCHG) += htc_battery.o
 
 obj-$(CONFIG_MACH_BRAVO) += board-bravo.o board-bravo-panel.o
 obj-$(CONFIG_MACH_BRAVO) += board-bravo-keypad.o board-bravo-mmc.o
@@ -97,6 +115,33 @@ obj-$(CONFIG_MACH_BRAVOC) += board-bravo-microp.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravo-tpa2018d1.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravo-smb329.o
 
+# MSM7x30 boards
+obj-$(CONFIG_ARCH_MSM7X30) += panel-samsungwvga-tl2796a.o panel-samsungwvga-s6e63m0.o panel-sonywvga-s6d16a0x21-7x30.o
+obj-$(CONFIG_ARCH_MSM7X30) += htc_wifi_nvs.o htc_awb_cal.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-keypad.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-microp.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-audio.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-mmc.o board-glacier-wifi.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-rfkill.o
+obj-$(CONFIG_MACH_GLACIER)+= htc_fmtx_rfkill.o
+obj-$(CONFIG_MACH_GLACIER)+= board-glacier-panel.o htc_bluetooth.o
+
+obj-$(CONFIG_MACH_VISION)+= board-vision.o
+obj-$(CONFIG_MACH_VISION)+= board-vision-keypad.o
+obj-$(CONFIG_MACH_VISION)+= board-vision-microp.o
+obj-$(CONFIG_MACH_VISION)+= board-vision-audio.o
+obj-$(CONFIG_MACH_VISION)+= board-vision-mmc.o board-vision-wifi.o
+obj-$(CONFIG_MACH_VISION)+= board-vision-rfkill.o htc_bluetooth.o
+
+obj-$(CONFIG_MACH_SPADE)+= board-spade.o
+obj-$(CONFIG_MACH_SPADE)+= board-spade-keypad.o
+obj-$(CONFIG_MACH_SPADE)+= board-spade-microp.o
+obj-$(CONFIG_MACH_SPADE)+= board-spade-audio.o
+obj-$(CONFIG_MACH_SPADE)+= board-spade-mmc.o board-spade-wifi.o htc_awb_cal.o
+obj-$(CONFIG_MACH_SPADE)+= board-spade-rfkill.o htc_bluetooth.o board-spade-panel.o
+
+obj-$(CONFIG_HTC_BATTCHG) += htc_battery.o
 obj-$(CONFIG_HTC_PWRSINK) += htc_pwrsink.o
 obj-$(CONFIG_HTC_PWRSPLY) += htc_power_supply.o
 obj-$(CONFIG_HTC_HEADSET) += htc_headset.o
@@ -109,8 +154,12 @@ obj-$(CONFIG_HTC_HEADSET_MICROP) += htc_headset_microp.o
 obj-$(CONFIG_PERFLOCK) += perflock.o
 obj-$(CONFIG_PERFLOCK) += htc_set_perflock.o
 
-obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-tpa2018d1.o
-obj-$(CONFIG_MACH_MAHIMAHI) += board-mahimahi-smb329.o
+obj-$(CONFIG_MSM_RMT_STORAGE_SERVER) += rmt_storage_server.o
+obj-$(CONFIG_MSM_RMT_STORAGE_CLIENT) += rmt_storage_client.o
+obj-$(CONFIG_MSM_NPA) += npa.o npa_resources.o msm_pm_qos.o msm_reqs.o
+obj-$(CONFIG_MSM_NPA_REMOTE) += npa_remote.o
+obj-$(CONFIG_MSM_NPA_REMOTE_ONCRPC) += npa_remote_rpc_client.o
+obj-$(CONFIG_TOUCHSCREEN_TSSC_MANAGER) += htc_tp_cal.o
 
 obj-$(CONFIG_ARCH_MSM_FLASHLIGHT) += msm_flashlight.o
 

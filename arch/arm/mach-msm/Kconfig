@@ -20,6 +20,7 @@ config ARCH_MSM7X30
 	select VERIFY_PERMISSION_FAULT
 	select MSM_DAL
 
+
 config ARCH_QSD8X50
 	bool "QSD8X50"
 	select ARCH_MSM_SCORPION
@@ -29,6 +30,14 @@ config ARCH_QSD8X50
 	select MSM_DAL
 	select VERIFY_PERMISSION_FAULT
 endchoice
+
+config ARCH_MSM7230
+	bool "MSM7230"
+	depends on ARCH_MSM7X30
+
+config ARCH_MSM7630
+	bool "MSM7630"
+	depends on ARCH_MSM7X30
 
 config MSM_SOC_REV_A
 	bool
@@ -116,11 +125,11 @@ config MSM_AMSS_VERSION
 	default 6225 if MSM_AMSS_VERSION_6225
 	default 6350 if MSM_AMSS_VERSION_6350
         default 3200 if MSM_AMSS_VERSION_3200
+	default 1200 if MSM_AMSS_VERSION_1200
 
 choice
 	prompt "AMSS modem firmware version"
 
-	depends on ARCH_MSM7X00A || ARCH_QSD8X50
 	default MSM_AMSS_VERSION_6225
 
 	config MSM_AMSS_VERSION_6210
@@ -138,22 +147,15 @@ choice
 	config MSM_AMSS_VERSION_6350
 		bool "6.3.50"
          
-         config MSM_AMSS_VERSION_3200
- 	        bool "3.2.00"
+	config MSM_AMSS_VERSION_3200
+		bool "3.2.00"
+
+	config MSM_AMSS_VERSION_1200
+		bool "1.2.00"
+
 endchoice
 
 menu "Qualcomm MSM Board Type"
-
-config HOLES_IN_ZONE
-        depends on ARCH_MSM7X00A || ARCH_QSD8X50
-        bool "Support for non-aligned zones"
-        default n
-        help
-         Select this to support boards with zones that aren't aligned
-         to MAX_ORDER boundaries (4MB by default).
-
-         Both the start and end of all zones must be aligned without
-         this option.
 
 config MACH_HALIBUT
 	depends on ARCH_MSM
@@ -198,12 +200,25 @@ config MACH_QSD8X50A_ST1_5
 endmenu
 
 config MSM_AMSS_SUPPORT_256MB_EBI1
+	depends on ARCH_MSM7X00A
         default n
         bool "AMSS that support unified 128MB and 256MB EBI1"
 
 config MSM_AMSS_RADIO2708_MEMMAP
+	depends on ARCH_MSM7X00A
 	default n
 	bool "Dream/Sapphire 2.22.27.08 Memory Map support"
+
+config HOLES_IN_ZONE
+        depends on ARCH_MSM7X00A || ARCH_QSD8X50
+        bool "Support for non-aligned zones"
+        default n
+        help
+         Select this to support boards with zones that aren't aligned
+         to MAX_ORDER boundaries (4MB by default).
+
+         Both the start and end of all zones must be aligned without
+         this option.
 
 config MSM_DEBUG_UART
 	int
@@ -271,6 +286,30 @@ config MACH_SUPERSONIC
 	bool "Supersonic (HTC EVO 4G)"
 	help
 	  Select this to support the Supersonic device
+
+config MACH_VISION
+       depends on ARCH_MSM7X30
+       depends on !MSM_STACKED_MEMORY
+       default n
+       bool "MSM7x30 VISION"
+       help
+         Support for the Qualcomm MSM7x30 Vision board.
+
+config MACH_GLACIER
+       depends on ARCH_MSM7X30
+       depends on !MSM_STACKED_MEMORY
+       default n
+       bool "MSM7x30 GLACIER"
+       help
+         Support for the Qualcomm MSM7x30 Glacier board.
+
+config MACH_SPADE
+       depends on ARCH_MSM7X30
+       depends on !MSM_STACKED_MEMORY
+       default n
+       bool "MSM7x30 SPADE"
+       help
+         Support for the Qualcomm MSM7x30 Spade board.
 
 config MACH_QSD8X50_FFA
 	depends on ARCH_QSD8X50
@@ -343,12 +382,21 @@ config HTC_PWRSINK
 	bool "HTC Power Sink Driver"
 
 config HTC_POWER_COLLAPSE_MAGIC
-  default n
-  bool "Check Power Collapse State"
+	default n
+	bool "Check Power Collapse State"
 
 config HTC_ONMODE_CHARGING
-  default n
-  bool "Low-power hibernate charging support"
+	default n
+	bool "On-mode charging icon support"
+	help
+	  Support on-mode charging icon
+
+config MSM_SPM
+        bool "Subsystem Power Manager"
+        depends on ARCH_MSM7X30
+        default n
+        help
+           Enables support for the subsystem power manager.
 
 config CACHE_FLUSH_RANGE_LIMIT
 	hex "Cache flush range limit"
@@ -531,6 +579,14 @@ config MSM_DAL
 	  the baseband processor or DSP in newer Qualcomm MSM/QSD
 	  chips.
 
+config MSM_N_WAY_SMD
+        depends on (MSM_SMD && (ARCH_QSD8X50 || ARCH_MSM7X30 || ARCH_MSM7227))
+        default y
+        bool "MSM N-WAY SMD support"
+        help
+          Supports APPS-QDSP SMD communication along with
+          normal APPS-MODEM SMD communication.
+
 config MSM_ONCRPCROUTER
 	depends on MSM_SMD
 	default y
@@ -545,6 +601,95 @@ config MSM_RPCSERVERS
 	bool "Kernel side RPC server bundle"
 	help
 	  none
+
+config MSM_RMT_STORAGE_SERVER
+        depends on (ARCH_MSM && MSM_ONCRPCROUTER)
+        default n
+        bool "Remote Storage RPC server"
+        help
+          Provide RPC mechanism for remote processors to access storage
+          device on apps processor.
+
+config MSM_RMT_STORAGE_CLIENT
+        depends on (ARCH_MSM && MSM_ONCRPCROUTER)
+        default n
+        bool "Remote Storage RPC client"
+        help
+          Provide RPC mechanism for remote processors to access storage
+          device on apps processor.
+
+config MSM_RMT_STORAGE_CLIENT_STATS
+        depends on (MSM_RMT_STORAGE_CLIENT && DEBUG_FS)
+        default n
+        bool "Remote storage RPC client performance statistics"
+        help
+          Collects performance statistics and shows this information
+          through a debugfs file rmt_storage_stats.
+
+config MSM_DALRPC
+        bool "DAL RPC support"
+        depends on (ARCH_QSD8X50 || ARCH_MSM7X30)
+        default y
+        help
+          Supports RPC calls to DAL devices on remote processor cores.
+
+config SMD_OFFSET_TCXO_STAT
+        depends on MSM_SMD
+        hex "SMD offset of total TCXO-off time"
+        default 0x0
+        help
+          TCXO off time is in tick of sleep clock, 1/32768.
+
+config MSM_NPA
+        bool "Node Power Architecture(NPA) support"
+        default y if ARCH_MSM7X30
+        help
+          Enable support for Node Power Architecture for aggressive
+          resource power management. NPA provides an interface for resources
+          to export their parameters and clients to request a value. The
+          resources have additional facility to aggreate requests, calculate
+          the resultant value, apply the value and notify the clients of
+          change in state.
+
+config MSM_NPA_LOG
+        bool "Node Power Architecture(NPA) logging support"
+        depends on MSM_NPA
+        default y
+        help
+          Enable logging support for NPA.
+
+config MSM_NPA_DEBUG
+        bool "Node Power Architecture(NPA) debug support"
+        depends on MSM_NPA
+        default n
+        help
+          Exports functions that can debug or reset NPA internal
+          data structures.
+
+config MSM_NPA_REMOTE
+        bool "Node Power Architecture(NPA) remoting"
+        depends on MSM_NPA
+        default n
+        help
+          Enables Linux NPA clients to talk to NPA nodes across
+          processor boundary.
+
+config MSM_NPA_REMOTE_ONCRPC
+        bool "Enables NPA remoting through ONCRPC protocol."
+        depends on MSM_NPA && MSM_ONCRPCROUTER
+        select MSM_NPA_REMOTE
+        default n
+        help
+          Enables Linux NPA clients to talk to NPA nodes in the modem
+          using ONCRPC communication protocol.
+
+config MSM_NPA_SYSTEM_BUS
+        bool "NPA-managed System Bus (AXI) rates through PM_QOS."
+        depends on MSM_NPA_REMOTE
+        default n
+        help
+          PM_QOS System Bus rate requests are interpreted as 'Flow IDs' and
+          are routed through the NPA framework.
 
 if CPU_FREQ_MSM
 
@@ -569,11 +714,11 @@ endif # CPU_FREQ_MSM
 
 config AXI_SCREEN_POLICY
         depends on ARCH_QSD8X50 || ARCH_MSM7X00A || ARCH_MSM7227 || ARCH_MSM7225
-  depends on HAS_EARLYSUSPEND
-  bool "Use higher AXI bus while screen ON"
-  default n
-  help
-    Simple AXI scaling based on screen ON/OFF and PWRC.
+	depends on HAS_EARLYSUSPEND
+	bool "Use higher AXI bus while screen ON"
+	default n
+	help
+	  Simple AXI scaling based on screen ON/OFF and PWRC.
 
 config MSM_HW3D
 	tristate "MSM Hardware 3D Register Driver"
@@ -599,7 +744,7 @@ config HTC_ACOUSTIC
 
 config HTC_ACOUSTIC_QSD
         tristate "HTC acoustic driver for QSD"
-        depends on ARCH_QSD8X50
+        depends on ARCH_QSD8X50 || ARCH_MSM7X30
         default n
         help
           Provides user space use shared memory allocate by using RPC code.
@@ -634,6 +779,10 @@ config MSM_SSBI
 	help
 	  Enable support for SSBI bus. This is required for communicatinig with
 	  Qualcomm PMICs and Audio codecs.
+
+config RPC_SIZE_1024
+	default n
+	bool "set RPC size to 1024"
 
 config WIFI_CONTROL_FUNC
 	bool "Enable WiFi control function abstraction"
@@ -700,5 +849,24 @@ config VIRTUAL_KPANIC_SRC
 	help
 	  Sets the partition to steal from to make the virtual one.
 
+config ACPUCLOCK_DEBUG
+	depends on DEBUG_FS
+	bool "Acpuclock debugfs"
+	default n
+	help
+	  Acpuclock freq/vdd adjustment in debugfs.
+
+config HTC_OFFMODE_ALARM
+	bool "Enables HTC offmode alarm."
+	default n
+	help
+	  support HTC offmode alarm.
+
+config PROC_COMM_TIMEOUT_RESET
+	bool "Enable proc_comm timeout to check modem hang"
+	default n
+	help
+	  To reset device while modem hang, and cannot respond proc_comm.
+	  Enable this might cause slight overhead on each proc_comm call.
 
 endif
