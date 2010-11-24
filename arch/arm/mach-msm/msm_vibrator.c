@@ -21,21 +21,9 @@
 #include <linux/sched.h>
 
 #include <mach/msm_rpcrouter.h>
+#include <mach/msm_rpc_version.h>
 
 #define PM_LIBPROG	  0x30000061
-#if defined(CONFIG_ARCH_MSM7X30)
-#define PM_LIBVERS        0x00030001
-#elif defined(CONFIG_MSM_LEGACY_7X00A_AMSS)
-#define PM_LIBVERS	  0xfb837d0b
-#else
-#define PM_LIBVERS	  MSM_RPC_VERS(1,1)
-#endif
-
-#if defined(CONFIG_ARCH_QSD8X50)  || defined(CONFIG_ARCH_MSM7X30)
-#define HTC_PROCEDURE_SET_VIB_ON_OFF	22
-#else
-#define HTC_PROCEDURE_SET_VIB_ON_OFF	21
-#endif
 #define PMIC_VIBRATOR_LEVEL	(3000)
 
 static struct work_struct vibrator_work;
@@ -52,7 +40,11 @@ static void set_pmic_vibrator(int on)
 	} req;
 
 	if (!vib_endpoint) {
+#ifdef CONFIG_ARCH_MSM7X30
+		vib_endpoint = msm_rpc_connect_compatible(PM_LIBPROG, PM_LIBVERS, 0);
+#else
 		vib_endpoint = msm_rpc_connect(PM_LIBPROG, PM_LIBVERS, 0);
+#endif
 		if (IS_ERR(vib_endpoint)) {
 			printk(KERN_ERR "init vib rpc failed!\n");
 			vib_endpoint = 0;
@@ -84,6 +76,8 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	if (value == 0)
 		vibe_state = 0;
 	else {
+		printk(KERN_INFO "%s(parent:%s): vibrates %d msec\n",
+			current->comm, current->parent->comm, value);
 		value = (value > 15000 ? 15000 : value);
 		vibe_state = 1;
 		hrtimer_start(&vibe_timer,
