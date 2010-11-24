@@ -1,29 +1,28 @@
 /* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *  	 notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *  	 notice, this list of conditions and the following disclaimer in the
+ *  	 documentation and/or other materials provided with the distribution.
+ *     * Neither the name of Code Aurora nor
+ *  	 the names of its contributors may be used to endorse or promote
+ *  	 products derived from this software without specific prior written
+ *  	 permission.
  *
- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
@@ -106,8 +105,8 @@
 #define VDEC_IOCTL_MAGIC 'v'
 
 struct vdec_ioctl_msg {
-	void __user *in;
-	void __user *out;
+	void *inputparam;
+	void *outputparam;
 };
 
 /* CMD params: InputParam:enum vdec_codec
@@ -226,11 +225,11 @@ struct vdec_allocatorproperty {
 };
 
 struct vdec_bufferpayload {
-	void __user *addr;
-	size_t sz;
+	uint8_t *bufferaddr;
+	uint32_t buffer_len;
 	int pmem_fd;
-	size_t offset;
-	size_t mmaped_sz;
+	uint32_t offset;
+	uint32_t mmaped_size;
 };
 
 struct vdec_setbuffer_cmd {
@@ -458,7 +457,7 @@ enum vdec_interlaced_format {
 	VDEC_InterlaceInterleaveFrameBottomFieldFirst = 0x4
 };
 
-enum vdec_output_format {
+enum vdec_output_fromat {
 	VDEC_YUV_FORMAT_NV12 = 0x1,
 	VDEC_YUV_FORMAT_TILE_4x2 = 0x2
 };
@@ -471,10 +470,10 @@ struct vdec_picsize {
 };
 
 struct vdec_seqheader {
-	void *addr;
-	size_t sz;
+	uint8_t *ptr_seqheader;
+	uint32_t seq_header_len;
 	int pmem_fd;
-	size_t pmem_offset;
+	uint32_t pmem_offset;
 };
 
 struct vdec_mberror {
@@ -483,26 +482,26 @@ struct vdec_mberror {
 };
 
 struct vdec_input_frameinfo {
-	void __user *user_addr;
-	size_t offset;
-	size_t data_len;
+	uint8_t *bufferaddr;
+	uint32_t offset;
+	uint32_t datalen;
 	uint32_t flags;
 	int64_t timestamp;
 	void *client_data;
 	int pmem_fd;
-	size_t pmem_offset;
+	uint32_t pmem_offset;
 };
 
 struct vdec_framesize {
-	uint32_t   left;
-	uint32_t   top;
-	uint32_t   right;
-	uint32_t   bottom;
+	uint32_t   n_left;
+	uint32_t   n_top;
+	uint32_t   n_right;
+	uint32_t   n_bottom;
 };
 
 struct vdec_output_frameinfo {
-	phys_addr_t phys_addr;
-	void __user *user_addr;
+	uint8_t *phy_addr;
+	uint8_t *bufferaddr;
 	uint32_t offset;
 	uint32_t len;
 	uint32_t flags;

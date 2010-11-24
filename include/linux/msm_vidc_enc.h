@@ -1,29 +1,28 @@
 /* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
+ * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *     * Neither the name of Code Aurora Forum, Inc. nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of Code Aurora nor
+ *       the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written
+ *       permission.
  *
- * THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 #ifndef _MSM_VIDC_ENC_H_
@@ -184,9 +183,9 @@
 /* Base value for encoder configuration ioctls*/
 #define VEN_IOCTLBASE_ENC	0x850
 
-struct venc_ioctl_msg {
-	void __user *in;
-	void __user *out;
+struct venc_ioctl_msg{
+	void	*inputparam;
+	void	*outputparam;
 };
 
 /*NON ENCODER CONFIGURATION IOCTLs*/
@@ -449,77 +448,77 @@ struct venc_ioctl_msg {
 #define VEN_IOCTL_GET_QP_RANGE \
 	_IOR(VEN_IOCTLBASE_ENC, 45, struct venc_ioctl_msg)
 
-struct venc_switch {
-	unsigned char status;
+struct venc_switch{
+	unsigned char	status;
 };
 
-struct venc_allocatorproperty {
-	u32 mincount;
-	u32 maxcount;
-	u32 actualcount;
-	u32 datasize;
-	u32 suffixsize;
-	u32 alignment;
-	u32 bufpoolid;
+struct venc_allocatorproperty{
+	unsigned long	 mincount;
+	unsigned long	 maxcount;
+	unsigned long	 actualcount;
+	unsigned long	 datasize;
+	unsigned long	 suffixsize;
+	unsigned long	 alignment;
+	unsigned long	 bufpoolid;
 };
 
-struct venc_bufferpayload {
-	void __user *buffer;
-	size_t sz;
-	int fd;
-	size_t offset;
-	unsigned int maped_size;
-	unsigned long filled_len;
+struct venc_bufferpayload{
+	unsigned char *pbuffer;
+	unsigned long	nsize;
+	int	fd;
+	unsigned int	offset;
+	unsigned int	maped_size;
+	unsigned long	filled_len;
 };
 
-struct venc_buffer {
-	void __user *addr;
-	size_t sz;
-	size_t len;
-	size_t offset;
-	long long timestamp;
-	u32 flags;
-	void *clientdata;
+struct venc_buffer{
+ unsigned char *ptrbuffer;
+ unsigned long	size;
+ unsigned long	len;
+ unsigned long	offset;
+ long long	timestamp;
+ unsigned long	flags;
+ void	*clientdata;
 };
 
-struct venc_basecfg {
-	u32 input_width;
-	u32 input_height;
-	u32 dvs_width;
-	u32 dvs_height;
-	u32 codectype;
-	u32 fps_num;
-	u32 fps_den;
-	u32 targetbitrate;
-	u32 inputformat;
+struct venc_basecfg{
+	unsigned long	input_width;
+	unsigned long	input_height;
+	unsigned long	dvs_width;
+	unsigned long	dvs_height;
+	unsigned long	codectype;
+	unsigned long	fps_num;
+	unsigned long	fps_den;
+	unsigned long	targetbitrate;
+	unsigned long	inputformat;
 };
 
-struct venc_profile {
+struct venc_profile{
 	unsigned long	profile;
 };
-struct ven_profilelevel {
+struct ven_profilelevel{
 	unsigned long	level;
 };
 
-struct venc_sessionqp {
+struct venc_sessionqp{
 	unsigned long	iframeqp;
 	unsigned long	pframqp;
 };
 
-struct venc_qprange {
-	u32 maxqp;
-	u32 minqp;
+struct venc_qprange{
+	unsigned long	maxqp;
+	unsigned long	minqp;
 };
-struct venc_intraperiod {
+struct venc_intraperiod{
 	unsigned long	num_pframes;
 };
-struct venc_seqheader {
-	void *buf;
-	size_t buf_sz;
-	size_t hdr_len;
+struct venc_seqheader{
+	unsigned char *hdrbufptr;
+	unsigned long	bufsize;
+	unsigned long	hdrlen;
 };
 
-struct venc_capability {
+struct venc_capability{
 	unsigned long	codec_types;
 	unsigned long	maxframe_width;
 	unsigned long	maxframe_height;
@@ -529,64 +528,64 @@ struct venc_capability {
 	unsigned char	dvs;
 };
 
-struct venc_entropycfg {
+struct venc_entropycfg{
 	unsigned longentropysel;
 	unsigned long	cabacmodel;
 };
 
-struct venc_dbcfg {
-	u32 db_mode;
-	u32 slicealpha_offset;
-	u32 slicebeta_offset;
+struct venc_dbcfg{
+	unsigned long	db_mode;
+	unsigned long	slicealpha_offset;
+	unsigned long	slicebeta_offset;
 };
 
-struct venc_intrarefresh {
+struct venc_intrarefresh{
 	unsigned long	irmode;
 	unsigned long	mbcount;
 };
 
-struct venc_multiclicecfg {
+struct venc_multiclicecfg{
 	unsigned long	mslice_mode;
 	unsigned long	mslice_size;
 };
 
-struct venc_bufferflush {
+struct venc_bufferflush{
 	unsigned long	flush_mode;
 };
 
-struct venc_ratectrlcfg {
+struct venc_ratectrlcfg{
 	unsigned long	rcmode;
 };
 
-struct	venc_voptimingcfg {
-	u32 voptime_resolution;
+struct	venc_voptimingcfg{
+	unsigned long	voptime_resolution;
 };
-struct venc_framerate {
-	u32 fps_denominator;
-	u32 fps_numerator;
+struct venc_framerate{
+	unsigned long	fps_denominator;
+	unsigned long	fps_numerator;
 };
 
-//TODO remove these stupid structs
 struct venc_targetbitrate{
-	u32 target_bitrate;
+	unsigned long	target_bitrate;
 };
 
-struct venc_rotation {
-	u32 rotation;
+
+struct venc_rotation{
+	unsigned long	rotation;
 };
 
-struct venc_timeout {
-	u32 millisec;
+struct venc_timeout{
+	 unsigned long	millisec;
 };
 
-struct venc_headerextension {
-	unsigned long header_extension;
+struct venc_headerextension{
+	 unsigned long	header_extension;
 };
 
-struct venc_msg {
-	unsigned long statuscode;
-	unsigned long msgcode;
-	struct venc_buffer buf;
-	size_t msgdata_size;
+struct venc_msg{
+	unsigned long	statuscode;
+	unsigned long	msgcode;
+	struct venc_buffer	buf;
+	unsigned long	msgdata_size;
 };
 #endif /* _MSM_VIDC_ENC_H_ */

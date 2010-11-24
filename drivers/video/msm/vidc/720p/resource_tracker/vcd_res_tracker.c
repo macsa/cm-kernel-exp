@@ -33,6 +33,8 @@
 #define VGA_PERF_LEVEL (1200 * 30)
 #define WVGA_PERF_LEVEL (1500 * 30)
 
+static struct pm_qos_request_list *qos_req_list;
+
 static unsigned int mfc_clk_freq_table[3] = {
 	61440000, 122880000, 170667000
 };
@@ -338,14 +340,13 @@ u32 res_trk_power_up(void)
 	VCDRES_MSG_LOW("clk_regime_sel_rail_control");
 #ifdef AXI_CLK_SCALING
 {
-	int rc;
 	VCDRES_MSG_MED("\n res_trk_power_up():: "
 		"Calling AXI add requirement\n");
-	rc = pm_qos_add_requirement(PM_QOS_SYSTEM_BUS_FREQ,
-		MSM_AXI_QOS_NAME, PM_QOS_DEFAULT_VALUE);
-	if (rc < 0)	{
-		VCDRES_MSG_ERROR("Request AXI bus QOS fails. rc = %d\n",
-			rc);
+	qos_req_list = pm_qos_add_request(PM_QOS_SYSTEM_BUS_FREQ,
+		PM_QOS_DEFAULT_VALUE);
+	
+	if (IS_ERR(qos_req_list)) {	
+	VCDRES_MSG_ERROR("Request AXI bus QOS fails.\n");
 		return FALSE;
 	}
 }
@@ -362,8 +363,7 @@ u32 res_trk_power_down(void)
 #ifdef AXI_CLK_SCALING
 	VCDRES_MSG_MED("\n res_trk_power_down()::"
 		"Calling AXI remove requirement\n");
-	pm_qos_remove_requirement(PM_QOS_SYSTEM_BUS_FREQ,
-		MSM_AXI_QOS_NAME);
+	pm_qos_remove_request(qos_req_list);
 #endif
 	VCDRES_MSG_MED("\n res_trk_power_down():: Calling "
 		"res_trk_disable_pwr_rail()\n");
@@ -387,7 +387,6 @@ u32 res_trk_set_perf_level(u32 n_req_perf_lvl, u32 *pn_set_perf_lvl,
 {
 	struct vcd_clnt_ctxt_type_t *p_cctxt_itr = NULL;
 	u32 axi_freq = 0, mfc_freq = 0, calc_mfc_freq = 0;
-	int rc = -1;
 	u8 enc_clnt_present = FALSE;
 
 	if (!pn_set_perf_lvl) {
@@ -462,14 +461,7 @@ u32 res_trk_set_perf_level(u32 n_req_perf_lvl, u32 *pn_set_perf_lvl,
     if (n_req_perf_lvl != VCD_RESTRK_MIN_PERF_LEVEL) {
 		VCDRES_MSG_HIGH("\n %s(): Setting AXI freq to %u",
 			__func__, axi_freq);
-		rc = pm_qos_update_requirement(PM_QOS_SYSTEM_BUS_FREQ,
-			MSM_AXI_QOS_NAME, axi_freq);
-
-		if (rc < 0)	{
-			VCDRES_MSG_ERROR("\n Update AXI bus QOS fails,"
-				"rc = %d\n", rc);
-			return FALSE;
-		}
+		pm_qos_update_request(qos_req_list, axi_freq);
 	}
 #endif
 
