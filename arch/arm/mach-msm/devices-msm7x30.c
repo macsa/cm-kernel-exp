@@ -21,6 +21,7 @@
 #include <mach/msm_iomap.h>
 #include <mach/dma.h>
 #include <mach/board.h>
+#include <linux/gpio.h>
 
 #include "devices.h"
 #include "proc_comm.h"
@@ -817,4 +818,21 @@ int __init rmt_storage_add_ramfs(void)
         return -ENOENT;
 }
 #endif
+
+#if defined(CONFIG_ARCH_MSM7X30)
+#define GPIO_I2C_CLK 70
+#define GPIO_I2C_DAT 71
+#elif defined(CONFIG_ARCH_QSD8X50)
+#define GPIO_I2C_CLK 95
+#define GPIO_I2C_DAT 96
+#else
+#define GPIO_I2C_CLK 60
+#define GPIO_I2C_DAT 61
+#endif
+
+void msm_i2c_gpio_init(void)
+{
+        gpio_request(GPIO_I2C_CLK, "i2c_clk");
+        gpio_request(GPIO_I2C_DAT, "i2c_data");
+}
 
