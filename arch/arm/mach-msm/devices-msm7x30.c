@@ -283,6 +283,13 @@ struct platform_device msm_device_qup_i2c = {
 	.resource	= resources_qup,
 };
 
+struct platform_device qup_device_i2c = {
+        .name           = "qup_i2c",
+        .id             = 4,
+        .num_resources  = ARRAY_SIZE(resources_qup),
+        .resource       = resources_qup,
+};
+
 static struct resource resources_hsusb[] = {
 	{
 		.start	= MSM_HSUSB_PHYS,
@@ -588,6 +595,27 @@ struct platform_device msm_device_mdp = {
 	.resource = resources_mdp,
 };
 
+#ifdef CONFIG_MSM_ROTATOR
+static struct resource resources_msm_rotator[] = {
+        {
+                .start  = MSM_ROTATOR_PHYS,
+                .end    = MSM_ROTATOR_PHYS + MSM_ROTATOR_SIZE - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+        {
+                .start  = INT_ROTATOR,
+                .end    = INT_ROTATOR,
+                .flags  = IORESOURCE_IRQ,
+        },
+};
+
+struct platform_device msm_rotator_device = {
+        .name           = "msm_rotator",
+        .id             = 0,
+        .num_resources  = ARRAY_SIZE(resources_msm_rotator),
+        .resource       = resources_msm_rotator,
+};
+#endif
 
 static struct resource resources_ssbi_pmic[] = {
 	{
@@ -656,6 +684,50 @@ struct platform_device msm_device_vidc_720p = {
 	.num_resources = ARRAY_SIZE(msm_vidc_720p_resources),
 	.resource = msm_vidc_720p_resources,
 };
+
+#ifdef CONFIG_SPI_QSD_NEW
+static struct resource qsd_spi_resources[] = {
+        {
+                .name   = "spi_irq_in",
+                .start  = INT_SPI_INPUT,
+                .end    = INT_SPI_INPUT,
+                .flags  = IORESOURCE_IRQ,
+        },
+        {
+                .name   = "spi_irq_out",
+                .start  = INT_SPI_OUTPUT,
+                .end    = INT_SPI_OUTPUT,
+                .flags  = IORESOURCE_IRQ,
+        },
+        {
+                .name   = "spi_irq_err",
+                .start  = INT_SPI_ERROR,
+                .end    = INT_SPI_ERROR,
+                .flags  = IORESOURCE_IRQ,
+        },
+        {
+                .name   = "spi_base",
+                .start  = 0xA8000000,
+                .end    = 0xA8000000 + SZ_4K - 1,
+                .flags  = IORESOURCE_MEM,
+        },
+        {
+                .name   = "spidm_channels",
+                .flags  = IORESOURCE_DMA,
+        },
+        {
+                .name   = "spidm_crci",
+                .flags  = IORESOURCE_DMA,
+        },
+};
+
+struct platform_device qsdnew_device_spi = {
+        .name           = "spi_qsd_new",
+        .id             = 0,
+        .num_resources  = ARRAY_SIZE(qsd_spi_resources),
+        .resource       = qsd_spi_resources,
+};
+#endif
 
 struct clk msm_clocks_7x30[] = {
 	CLK_PCOM("adm_clk",	ADM_CLK,	NULL, 0),
