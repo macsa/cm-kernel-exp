@@ -69,6 +69,7 @@
 #include <mach/msm_rotator_imem.h>
 #include <linux/ktime.h>
 #include <linux/workqueue.h>
+#include <linux/slab.h>
 
 #define DRIVER_NAME "msm_rotator"
 

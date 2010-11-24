@@ -18,8 +18,8 @@
 #include <linux/interrupt.h>
 #include <linux/gpio.h>
 #include <linux/wakelock.h>
-#include <mach/msm_fb.h>
 #include <linux/slab.h>
+#include <mach/msm_fb.h>
 
 static DECLARE_WAIT_QUEUE_HEAD(epson_vsync_wait);
 

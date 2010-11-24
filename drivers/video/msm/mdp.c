@@ -25,6 +25,7 @@
 #include <linux/file.h>
 #include <linux/android_pmem.h>
 #include <linux/major.h>
+#include <linux/msm_hw3d.h>
 
 #include <mach/msm_iomap.h>
 #include <mach/msm_fb.h>
@@ -170,6 +171,7 @@ static irqreturn_t mdp_isr(int irq, void *data)
 	if (mdp_dma_timer_enable) {
 		del_timer_sync(&mdp->dma_timer);
 		mdp_dma_timer_enable = 0;
+		pr_err("%s: stop dma timer\n", __func__);
 	}
 
 	status &= mdp_irq_mask;
@@ -510,9 +512,11 @@ void mdp_dma(struct mdp_device *mdp_dev, uint32_t addr, uint32_t stride,
 	out_if->dma_cb = callback;
 	out_if->dma_start(out_if->priv, addr, stride, width, height, x, y);
 
-	if (mdp_dma_timer_enable)
+	if (mdp_dma_timer_enable) {
+		pr_err("%s: start dma timer\n", __func__);
 		mod_timer(&mdp->dma_timer,
 			jiffies + msecs_to_jiffies(17));
+	}
 
 	spin_unlock_irqrestore(&mdp->lock, flags);
 }

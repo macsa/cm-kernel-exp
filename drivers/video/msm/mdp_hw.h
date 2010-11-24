@@ -87,19 +87,14 @@ struct mdp_lcdc_info {
 		uint32_t	hsync_skew;
 		uint32_t	polarity;
 	} parms;
-	atomic_t        blank_count;
-	struct mutex    blank_lock;
 };
 
 struct panel_icm_info {
 	bool	icm_mode;
 	bool	icm_doable;
-	bool	clock_enabled;
 	int	panel_update;
 	struct mutex icm_lock;
-	struct mdp_lcdc_info *lcdc;
 	spinlock_t lock;
-	void (*force_leave)(void);
 };
 
 extern int mdp_out_if_register(struct mdp_device *mdp_dev, int interface,

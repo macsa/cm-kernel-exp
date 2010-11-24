@@ -14,6 +14,7 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
+#include <linux/slab.h>
 #include <mach/msm_fb.h>
 #include <linux/wakelock.h>
 #include <mach/htc_battery.h>

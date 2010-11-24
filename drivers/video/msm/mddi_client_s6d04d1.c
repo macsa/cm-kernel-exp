@@ -19,6 +19,7 @@
 #include <linux/leds.h>
 #include <linux/delay.h>
 #include <linux/wakelock.h>
+#include <linux/slab.h>
 #include <mach/msm_fb.h>
 #include <mach/msm_panel.h>
 

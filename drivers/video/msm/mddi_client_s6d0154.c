@@ -26,6 +26,7 @@
 #include <linux/kthread.h>
 #include <linux/wakelock.h>
 #include <linux/clk.h>
+#include <linux/slab.h>
 #include <asm/atomic.h>
 #include <asm/mach-types.h>
 #include "../../../arch/arm/mach-msm/proc_comm.h"
