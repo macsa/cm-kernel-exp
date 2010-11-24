@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MSM_SCORPION) += idle-v7.o
 obj-$(CONFIG_ARCH_MSM_SCORPION) += arch-init-scorpion.o
 obj-$(CONFIG_ARCH_QSD8X50) += acpuclock-qsd8x50.o
 obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o internal_power_rail.o
+obj-$(CONFIG_ACPUCLOCK_DEBUG) += acpuclock_debug.o
 obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o socinfo.o
 obj-$(CONFIG_ARCH_MSM7X30) += spm.o
 obj-$(CONFIG_ARCH_MSM7X30) += rpc_hsusb.o
