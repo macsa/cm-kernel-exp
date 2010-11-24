@@ -72,6 +72,7 @@
 #include <linux/string.h>
 #include <linux/types.h>
 #include <linux/msm_kgsl.h>
+#include <linux/slab.h>
 
 #include "kgsl_g12_drawctxt.h"
 #include "kgsl_sharedmem.h"

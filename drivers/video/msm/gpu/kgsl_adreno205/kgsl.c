@@ -105,6 +105,9 @@ struct kgsl_file_private {
 
 static void kgsl_put_phys_file(struct file *file);
 
+static struct pm_qos_request_list *qos_req_list_3d;
+static struct pm_qos_request_list *qos_req_list_2d;
+
 static int kgsl_runpending(struct kgsl_device *device)
 {
 	if (device->flags & KGSL_FLAGS_INITIALIZED)
@@ -259,9 +262,8 @@ int kgsl_pwrctrl(unsigned int pwrflag)
 				clk_set_min_rate(kgsl_driver.yamato_grp_src_clk,
 					kgsl_driver.clk_freq[KGSL_3D_MIN_FREQ]);
 			if (kgsl_driver.clk_freq[KGSL_AXI_HIGH_3D])
-				pm_qos_update_requirement(
-					PM_QOS_SYSTEM_BUS_FREQ,
-					"kgsl_3d", PM_QOS_DEFAULT_VALUE);
+				pm_qos_update_request(qos_req_list_3d,
+					PM_QOS_DEFAULT_VALUE);
 			kgsl_driver.power_flags &=
 					~(KGSL_PWRFLAGS_YAMATO_CLK_ON);
 			kgsl_driver.power_flags |= KGSL_PWRFLAGS_YAMATO_CLK_OFF;
@@ -272,8 +274,7 @@ int kgsl_pwrctrl(unsigned int pwrflag)
 			/* 2d composition doesnt require highest clock */
 			if (kgsl_driver.clk_freq[KGSL_AXI_HIGH_3D]) {
 				if (strcmp(get_task_comm(tname, current), "SurfaceFlinger")) {
-					pm_qos_update_requirement(
-						PM_QOS_SYSTEM_BUS_FREQ, "kgsl_3d",
+					pm_qos_update_request(qos_req_list_3d,
 						kgsl_driver.clk_freq[KGSL_AXI_HIGH_3D]);
 				}
                         }
@@ -310,9 +311,8 @@ int kgsl_pwrctrl(unsigned int pwrflag)
 					kgsl_driver.clk_freq[KGSL_2D_MIN_FREQ]);
 			}
 			if (kgsl_driver.clk_freq[KGSL_AXI_HIGH_2D])
-				pm_qos_update_requirement(
-					PM_QOS_SYSTEM_BUS_FREQ,
-					"kgsl_2d", PM_QOS_DEFAULT_VALUE);
+				pm_qos_update_request(qos_req_list_2d,
+					PM_QOS_DEFAULT_VALUE);
 			kgsl_driver.power_flags &= ~(KGSL_PWRFLAGS_G12_CLK_ON);
 			kgsl_driver.power_flags |= KGSL_PWRFLAGS_G12_CLK_OFF;
 		}
@@ -320,8 +320,7 @@ int kgsl_pwrctrl(unsigned int pwrflag)
 	case KGSL_PWRFLAGS_G12_CLK_ON:
 		if (kgsl_driver.power_flags & KGSL_PWRFLAGS_G12_CLK_OFF) {
 			if (kgsl_driver.clk_freq[KGSL_AXI_HIGH_2D])
-				pm_qos_update_requirement(
-					PM_QOS_SYSTEM_BUS_FREQ, "kgsl_2d",
+				pm_qos_update_request(qos_req_list_2d,
 					kgsl_driver.clk_freq[KGSL_AXI_HIGH_2D]);
 			if (kgsl_driver.g12_grp_pclk)
 				clk_enable(kgsl_driver.g12_grp_pclk);
@@ -1615,7 +1614,7 @@ static void kgsl_driver_cleanup(void)
 		kgsl_driver.g12_interrupt_num = 0;
 	}
 
-	pm_qos_remove_requirement(PM_QOS_SYSTEM_BUS_FREQ, "kgsl_3d");
+	pm_qos_remove_request(qos_req_list_3d);
 
 	if (kgsl_driver.yamato_grp_pclk) {
 		clk_put(kgsl_driver.yamato_grp_pclk);
@@ -1643,7 +1642,7 @@ static void kgsl_driver_cleanup(void)
 	if (kgsl_driver.g12_grp_clk) {
 		clk_put(kgsl_driver.g12_grp_clk);
 		kgsl_driver.g12_grp_clk = NULL;
-		pm_qos_remove_requirement(PM_QOS_SYSTEM_BUS_FREQ, "kgsl_2d");
+		pm_qos_remove_request(qos_req_list_2d);
 	}
 
 	kgsl_driver.pdev = NULL;
@@ -1737,7 +1736,7 @@ static int __devinit kgsl_platform_probe(struct platform_device *pdev)
 		kgsl_driver.clk_freq[KGSL_3D_MAX_FREQ] = pdata->max_grp3d_freq;
 	}
 
-	pm_qos_add_requirement(PM_QOS_SYSTEM_BUS_FREQ, "kgsl_3d",
+	qos_req_list_3d = pm_qos_add_request(PM_QOS_SYSTEM_BUS_FREQ,
 				PM_QOS_DEFAULT_VALUE);
 
 	/*acquire yamato interrupt */
@@ -1784,7 +1783,7 @@ static int __devinit kgsl_platform_probe(struct platform_device *pdev)
 		disable_irq(kgsl_driver.g12_interrupt_num);
 
 		/* g12 config */
-		pm_qos_add_requirement(PM_QOS_SYSTEM_BUS_FREQ, "kgsl_2d",
+		qos_req_list_2d = pm_qos_add_request(PM_QOS_SYSTEM_BUS_FREQ,
 				PM_QOS_DEFAULT_VALUE);
 		result = kgsl_g12_config(&kgsl_driver.g12_config, pdev);
 		if (result != 0)
