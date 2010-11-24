@@ -746,3 +746,75 @@ struct clk msm_clocks_7x30[] = {
 
 unsigned msm_num_clocks_7x30 = ARRAY_SIZE(msm_clocks_7x30);
 
+#ifdef CONFIG_MSM_RMT_STORAGE_SERVER
+#define RAMFS_INFO_MAGICNUMBER          0x654D4D43
+#define RAMFS_INFO_VERSION              0x00000001
+#define RAMFS_MODEMSTORAGE_ID           0x4D454653
+
+static void __init msm_register_device(struct platform_device *pdev, void *data)
+{
+        int ret;
+
+        pdev->dev.platform_data = data;
+
+        ret = platform_device_register(pdev);
+        if (ret)
+                dev_err(&pdev->dev,
+                          "%s: platform_device_register() failed = %d\n",
+                          __func__, ret);
+}
+
+static struct resource rmt_storage_resources[] = {
+       {
+                .flags  = IORESOURCE_MEM,
+       },
+};
+
+static struct platform_device rmt_storage_device = {
+       .name           = "rmt_storage",
+       .id             = -1,
+       .num_resources  = ARRAY_SIZE(rmt_storage_resources),
+       .resource       = rmt_storage_resources,
+};
+
+int __init rmt_storage_add_ramfs(void)
+{
+        struct shared_ramfs_table *ramfs_table;
+        struct shared_ramfs_entry *ramfs_entry;
+        int index;
+
+        ramfs_table = smem_alloc(SMEM_SEFS_INFO,
+                        sizeof(struct shared_ramfs_table));
+
+        if (!ramfs_table) {
+                printk(KERN_WARNING "%s: No RAMFS table in SMEM\n", __func__);
+                return -ENOENT;
+        }
+
+        if ((ramfs_table->magic_id != (u32) RAMFS_INFO_MAGICNUMBER) ||
+                (ramfs_table->version != (u32) RAMFS_INFO_VERSION)) {
+                printk(KERN_WARNING "%s: Magic / Version mismatch:, "
+                       "magic_id=%#x, format_version=%#x\n", __func__,
+                       ramfs_table->magic_id, ramfs_table->version);
+                return -ENOENT;
+        }
+
+        for (index = 0; index < ramfs_table->entries; index++) {
+                ramfs_entry = &ramfs_table->ramfs_entry[index];
+
+                /* Find a match for the Modem Storage RAMFS area */
+                if (ramfs_entry->client_id == (u32) RAMFS_MODEMSTORAGE_ID) {
+                        printk(KERN_INFO "%s: RAMFS Info (from SMEM): "
+                                "Baseaddr = 0x%08x, Size = 0x%08x\n", __func__,
+                                ramfs_entry->base_addr, ramfs_entry->size);
+                        rmt_storage_resources[0].start = ramfs_entry->base_addr;
+                        rmt_storage_resources[0].end = ramfs_entry->base_addr +
+                                                        ramfs_entry->size - 1;
+                        msm_register_device(&rmt_storage_device, ramfs_entry);
+                        return 0;
+                }
+        }
+        return -ENOENT;
+}
+#endif
+
