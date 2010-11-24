@@ -180,6 +180,23 @@ config TWL4030_POWER
 	  and load scripts controling which resources are switched off/on
 	  or reset when a sleep, wakeup or warm reset event occurs.
 
+config MARIMBA_CORE
+        tristate "Marimba Core"
+        depends on I2C && ARCH_MSM7X30
+        default n
+        help
+          Enables the Marimba Core driver. The core driver provides
+          read/write capability to registers which are part of the
+          marimba core.
+
+config MARIMBA_CODEC
+        tristate "Marimba Codec"
+        depends on MARIMBA_CORE
+        default n
+        help
+         This driver programs Marimba Wideband Codec for input/output of
+         audio signal.
+
 config TWL4030_CODEC
 	bool
 	depends on TWL4030_CORE

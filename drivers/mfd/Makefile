@@ -40,6 +40,9 @@ obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
 
 obj-$(CONFIG_MFD_MC13783)	+= mc13783-core.o
 
+obj-$(CONFIG_MARIMBA_CORE)      += marimba-core.o
+obj-$(CONFIG_MARIMBA_CODEC)     += marimba-codec.o
+
 obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
 
 obj-$(CONFIG_EZX_PCAP)		+= ezx-pcap.o

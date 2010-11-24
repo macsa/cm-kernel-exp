@@ -60,6 +60,7 @@
 #include <linux/clk.h>
 #include <linux/err.h>
 #include <linux/debugfs.h>
+#include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <mach/qdsp5v2/snddev_icodec.h>
 #include <mach/qdsp5v2/audio_dev_ctl.h>
