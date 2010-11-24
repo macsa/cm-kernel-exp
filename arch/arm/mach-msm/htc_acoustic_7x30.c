@@ -21,6 +21,7 @@
 #include <linux/mm.h>
 #include <linux/gfp.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 #include <mach/qdsp5v2/snddev_icodec.h>
 #include <mach/qdsp5v2/audio_dev_ctl.h>
 #include <mach/qdsp5v2/audio_acdb.h>

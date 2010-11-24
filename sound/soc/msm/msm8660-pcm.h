@@ -1,4 +1,4 @@
-/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -24,24 +24,38 @@
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
-#ifndef __ARCH_ARM_MACH_MSM_DEBUG_MM_H_
-#define __ARCH_ARM_MACH_MSM_DEBUG_MM_H_
 
-/* The below macro removes the directory path name and retains only the
- * file name to avoid long path names in log messages that comes as
- * part of __FILE__ to compiler.
- */
-#define __MM_FILE__ strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/')+1) : \
-	__FILE__
+#ifndef _MSM_PCM_H
+#define _MSM_PCM_H
 
-#define MM_DBG(fmt, args...) pr_debug("[%s] " fmt,\
-		__func__, ##args)
+#define USE_CHANNELS_MIN        1
+#define USE_CHANNELS_MAX        2
+#define NUM_DMAS 9
+#define DMASZ	16384
+#define MAX_CHANNELS 9
 
-#define MM_INFO(fmt, args...) pr_info("[%s:%s] " fmt,\
-	       __MM_FILE__, __func__, ##args)
+#define MSM_LPA_PHYS   0x28100000
+#define MSM_LPA_END    0x2810DFFF
 
-#define MM_ERR(fmt, args...) pr_err("[%s:%s] " fmt,\
-	       __MM_FILE__, __func__, ##args)
-#endif /* __ARCH_ARM_MACH_MSM_DEBUG_MM_H_ */
+
+struct msm_audio {
+	struct snd_pcm_substream *substream;
+
+	/* data allocated for various buffers */
+	char *data;
+	dma_addr_t phys;
+
+	unsigned int pcm_size;
+	unsigned int pcm_count;
+	int enabled;
+	int period;
+	int dma_ch;
+	int period_index;
+	int start;
+};
+
+extern struct snd_soc_dai msm_cpu_dai[NUM_DMAS];
+extern struct snd_soc_platform msm8660_soc_platform;
+
+#endif /*_MSM_PCM_H*/

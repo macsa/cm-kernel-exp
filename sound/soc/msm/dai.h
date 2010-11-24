@@ -1,4 +1,4 @@
-/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -26,22 +26,35 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef __ARCH_ARM_MACH_MSM_DEBUG_MM_H_
-#define __ARCH_ARM_MACH_MSM_DEBUG_MM_H_
+#ifndef __DAI_H__
+#define __DAI_H__
 
-/* The below macro removes the directory path name and retains only the
- * file name to avoid long path names in log messages that comes as
- * part of __FILE__ to compiler.
- */
-#define __MM_FILE__ strrchr(__FILE__, '/') ? (strrchr(__FILE__, '/')+1) : \
-	__FILE__
+struct dai_dma_params {
+	u8 *buffer;
+	uint32_t src_start;
+	uint32_t bus_id;
+	int buffer_size;
+	int period_size;
+	int channels;
+};
 
-#define MM_DBG(fmt, args...) pr_debug("[%s] " fmt,\
-		__func__, ##args)
+enum {
+	DAI_SPKR = 0,
+	DAI_MIC,
+	DAI_MI2S,
+	DAI_SEC_SPKR,
+	DAI_SEC_MIC,
+};
 
-#define MM_INFO(fmt, args...) pr_info("[%s:%s] " fmt,\
-	       __MM_FILE__, __func__, ##args)
-
-#define MM_ERR(fmt, args...) pr_err("[%s:%s] " fmt,\
-	       __MM_FILE__, __func__, ##args)
-#endif /* __ARCH_ARM_MACH_MSM_DEBUG_MM_H_ */
+/* Function Prototypes */
+int dai_open(uint32_t dma_ch);
+void dai_close(uint32_t dma_ch);
+int dai_start(uint32_t dma_ch);
+int dai_stop(uint32_t dma_ch);
+int dai_set_params(uint32_t dma_ch, struct dai_dma_params *params);
+uint32_t dai_get_dma_pos(uint32_t dma_ch);
+void register_dma_irq_handler(int dma_ch,
+		irqreturn_t (*callback) (int intrSrc, void *private_data),
+		void *private_data);
+void unregister_dma_irq_handler(int dma_ch);
+#endif
