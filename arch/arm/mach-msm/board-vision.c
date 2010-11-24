@@ -1317,14 +1317,10 @@ static void __init audience_gpio_init(void)
 	0: with audience.
 	1: without audience*/
 	if (engineerid & 0x4) {
-		gpio_configure(VISION_AUD_A1026_INT,
-					GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-		gpio_configure(VISION_AUD_MICPATH_SEL,
-					GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-		gpio_configure(VISION_AUD_A1026_RESET,
-					GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-		gpio_configure(VISION_AUD_A1026_WAKEUP,
-					GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
+		gpio_direction_output(VISION_AUD_A1026_INT, 0);
+		gpio_direction_output(VISION_AUD_MICPATH_SEL, 0);
+		gpio_direction_output(VISION_AUD_A1026_RESET, 0);
+		gpio_direction_output(VISION_AUD_A1026_WAKEUP, 0);
 		pr_info("Configure audio codec gpio for devices without audience.\n");
 	}
 }

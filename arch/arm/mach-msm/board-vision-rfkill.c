@@ -189,17 +189,13 @@ static void vision_config_bt_init(void)
 	mdelay(5);
 
 	/* BT_RESET_N */
-	gpio_configure(VISION_GPIO_BT_RESET_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-	mdelay(2);
+	gpio_direction_output(VISION_GPIO_BT_RESET_N, 1);
+	
 	/* BT_SHUTDOWN_N */
-	gpio_configure(VISION_GPIO_BT_SHUTDOWN_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-	mdelay(2);
+	gpio_direction_output(VISION_GPIO_BT_SHUTDOWN_N, 0);
 
 	/* BT_CHIP_WAKE */
-	gpio_configure(VISION_GPIO_BT_CHIP_WAKE,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
+	gpio_direction_output(VISION_GPIO_BT_CHIP_WAKE, 0);
 
 }
 
@@ -211,28 +207,19 @@ static void vision_config_bt_on(void)
 	mdelay(5);
 
 	/* BT_SHUTDOWN_N */
-	gpio_configure(VISION_GPIO_BT_SHUTDOWN_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
-	mdelay(2);
+	gpio_direction_output(VISION_GPIO_BT_SHUTDOWN_N, 1);
 
 	/* BT_RESET_N */
-	gpio_configure(VISION_GPIO_BT_RESET_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
-	mdelay(2);
-
+	gpio_direction_output(VISION_GPIO_BT_RESET_N, 1);
 }
 
 static void vision_config_bt_off(void)
 {
 	/* BT_RESET_N */
-	gpio_configure(VISION_GPIO_BT_RESET_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-	mdelay(2);
+	gpio_direction_output(VISION_GPIO_BT_RESET_N, 0);
 
 	/* BT_SHUTDOWN_N */
-	gpio_configure(VISION_GPIO_BT_SHUTDOWN_N,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-	mdelay(2);
+	gpio_direction_output(VISION_GPIO_BT_SHUTDOWN_N, 0);
 
 	/* set bt off configuration*/
 	config_bt_table(vision_bt_off_table,
@@ -240,21 +227,18 @@ static void vision_config_bt_off(void)
 	mdelay(5);
 
 	/* BT_RTS */
-	gpio_configure(VISION_GPIO_BT_UART1_RTS,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
+	gpio_direction_output(VISION_GPIO_BT_UART1_RTS, 0);
 	/* BT_CTS */
 
 	/* BT_RX */
 
 	/* BT_TX */
-	gpio_configure(VISION_GPIO_BT_UART1_TX,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
+	gpio_direction_output(VISION_GPIO_BT_UART1_TX, 0);
 
 	/* BT_HOST_WAKE */
 
 	/* BT_CHIP_WAKE */
-	gpio_configure(VISION_GPIO_BT_CHIP_WAKE,
-				GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
+	gpio_direction_output(VISION_GPIO_BT_CHIP_WAKE, 0);
 }
 
 static int bluetooth_set_power(void *data, bool blocked)
