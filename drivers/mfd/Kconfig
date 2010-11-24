@@ -491,13 +491,21 @@ config MFD_JANZ_CMODIO
 	  host many different types of MODULbus daughterboards, including
 	  CAN and GPIO controllers.
 
-config PM8058
-	bool "Qualcomm PM8058 Power Management IC"
-	depends on MSM_SSBI && ARCH_MSM7X30
-	default y if MSM_SSBI && ARCH_MSM7X30
-	help
-	  Say yes here if your board is equipped with the Qualcomm
-	  PM8058 PMIC.
+config PMIC8058
+        tristate "PMIC8058 Power Management chip"
+        depends on I2C && ARCH_MSM7X30
+        default y if I2C && ARCH_MSM7X30
+        select MFD_CORE
+        help
+          Say yes here for Qualcomm PM8058 chip.
+
+config MARIMBA_TSADC
+        tristate "Support for Marimba Touchscreen ADC"
+        depends on MARIMBA_CORE
+        default y if MARIMBA_CORE
+        help
+          Say yes here if you want to include support for TSADC in the
+          Qualcomm Marimba chip.
 
 endif # MFD_SUPPORT
 
@@ -521,21 +529,5 @@ config MCP_UCB1200
 config MCP_UCB1200_TS
 	tristate "Touchscreen interface support"
 	depends on MCP_UCB1200 && INPUT
-
-config PMIC8058
-        tristate "PMIC8058 Power Management chip"
-        depends on I2C && ARCH_MSM7X30
-        default y if I2C && ARCH_MSM7X30
-        select MFD_CORE
-        help
-          Say yes here for Qualcomm PM8058 chip.
-
-config MARIMBA_TSADC
-        tristate "Support for Marimba Touchscreen ADC"
-        depends on MARIMBA_CORE
-        default y if MARIMBA_CORE
-        help
-          Say yes here if you want to include support for TSADC in the
-          Qualcomm Marimba chip.
 
 endmenu

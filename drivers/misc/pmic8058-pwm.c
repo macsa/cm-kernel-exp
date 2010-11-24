@@ -78,6 +78,7 @@
 #include <linux/platform_device.h>
 #include <linux/err.h>
 #include <linux/pwm.h>
+#include <linux/slab.h>
 #include <linux/mfd/pmic8058.h>
 #include <linux/pmic8058-pwm.h>
 

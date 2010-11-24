@@ -74,7 +74,7 @@ obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
 obj-$(CONFIG_MFD_JANZ_CMODIO)	+= janz-cmodio.o
 obj-$(CONFIG_MARIMBA_CODEC)     += marimba-codec.o
 ifeq ($(CONFIG_MSM_SSBI),y)
-	obj-$(CONFIG_PMIC8058)          += pm8058-core.o
+obj-$(CONFIG_PMIC8058)          += pm8058-core.o
 else
-	obj-$(CONFIG_PMIC8058)          += pmic8058.o
+obj-$(CONFIG_PMIC8058)          += pmic8058.o
 endif
