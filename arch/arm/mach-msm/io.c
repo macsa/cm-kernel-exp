@@ -37,7 +37,7 @@
 	 }
 
 #if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_MSM7X27) \
-	|| defined(CONFIG_ARCH_MSM7X25)
+	|| defined(CONFIG_ARCH_MSM7X25) || defined(CONFIG_ARCH_MSM7X30)
 static struct map_desc msm_io_desc[] __initdata = {
 	MSM_DEVICE(VIC),
 	MSM_DEVICE(CSR),
@@ -64,12 +64,32 @@ static struct map_desc msm_io_desc[] __initdata = {
 
 void __init msm_map_common_io(void)
 {
-	/* Make sure the peripheral register window is closed, since
-	 * we will use PTE flags (TEX[1]=1,B=0,C=1) to determine which
-	 * pages are peripheral interface or not.
-	 */
-	asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
-	iotable_init(msm_io_desc, ARRAY_SIZE(msm_io_desc));
+#ifdef CONFIG_ARCH_MSM_ARM11
+    /* Make sure the peripheral register window is closed, since
+     * we will use PTE flags (TEX[1]=1,B=0,C=1) to determine which
+     * pages are peripheral interface or not.
+     */
+    asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
+#endif
+#ifdef CONFIG_ARCH_QSD8X50
+    unsigned int unused;
+
+    /* The bootloader may not have done it, so disable predecode repair
+     * cache for thumb2 (DPRC, set bit 4 in PVR0F2) due to a bug.
+     */
+    asm volatile ("mrc p15, 0, %0, c15, c15, 2\n\t"
+              "orr %0, %0, #0x10\n\t"
+              "mcr p15, 0, %0, c15, c15, 2"
+              : "=&r" (unused));
+#endif
+#ifdef CONFIG_ARCH_QSD8X50
+    /* clear out EFSR and ADFSR on boot */
+    asm volatile ("mcr p15, 7, %0, c15, c0, 1\n\t"
+              "mcr p15, 0, %0, c5, c1, 0"
+              : : "r" (0));
+#endif
+
+    iotable_init(msm_io_desc, ARRAY_SIZE(msm_io_desc));
 }
 #endif
 
