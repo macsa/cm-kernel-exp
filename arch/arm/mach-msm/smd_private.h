@@ -13,31 +13,29 @@
  * GNU General Public License for more details.
  *
  */
+
+#if defined(CONFIG_QCT_LTE)
+#include "lte/smd_private.h"
+#endif
+
 #ifndef _ARCH_ARM_MACH_MSM_MSM_SMD_PRIVATE_H_
 #define _ARCH_ARM_MACH_MSM_MSM_SMD_PRIVATE_H_
 
-#include <linux/platform_device.h>
-#include <linux/spinlock.h>
-#include <linux/list.h>
-
-struct smem_heap_info
-{
+struct smem_heap_info {
 	unsigned initialized;
 	unsigned free_offset;
 	unsigned heap_remaining;
 	unsigned reserved;
 };
 
-struct smem_heap_entry
-{
+struct smem_heap_entry {
 	unsigned allocated;
 	unsigned offset;
 	unsigned size;
 	unsigned reserved;
 };
 
-struct smem_proc_comm
-{
+struct smem_proc_comm {
 	unsigned command;
 	unsigned status;
 	unsigned data1;
@@ -54,8 +52,7 @@ struct smem_proc_comm
 #define VERSION_APPS      8
 #define VERSION_MODEM     9
 
-struct smem_shared
-{
+struct smem_shared {
 	struct smem_proc_comm proc_comm[4];
 	unsigned version[32];
 	struct smem_heap_info heap_info;
@@ -65,14 +62,7 @@ struct smem_shared
 #define SMSM_V1_SIZE		(sizeof(unsigned) * 8)
 #define SMSM_V2_SIZE		(sizeof(unsigned) * 4)
 
-#ifndef CONFIG_ARCH_MSM_SCORPION
-struct smsm_interrupt_info
-{
-	uint32_t interrupt_mask;
-	uint32_t pending_interrupts;
-	uint32_t wakeup_reason;
-};
-#else
+#if defined(CONFIG_MSM_N_WAY_SMD)
 #define DEM_MAX_PORT_NAME_LEN (20)
 struct msm_dem_slave_data {
 	uint32_t sleep_time;
@@ -87,6 +77,21 @@ struct msm_dem_slave_data {
 	char     smd_port_name[DEM_MAX_PORT_NAME_LEN];
 	uint32_t reserved2;
 };
+#else
+#define SMSM_MAX_PORT_NAME_LEN    20
+struct smsm_interrupt_info {
+	uint32_t interrupt_mask;
+	uint32_t pending_interrupts;
+	uint32_t wakeup_reason;
+	uint32_t aArm_rpc_prog;
+	uint32_t aArm_rpc_proc;
+	char aArm_smd_port_name[SMSM_MAX_PORT_NAME_LEN];
+	/* If the wakeup reason is GPIO then send the gpio info */
+	uint32_t aArm_gpio_info;
+	/*uint32_t interrupt_mask;
+	uint32_t pending_interrupts;
+	uint32_t wakeup_reason;*/
+};
 #endif
 
 #define SZ_DIAG_ERR_MSG 0xC8
@@ -96,7 +101,10 @@ struct msm_dem_slave_data {
 #define ID_CH_ALLOC_TBL SMEM_CHANNEL_ALLOC_TBL
 
 #define SMSM_INIT		0x00000001
+#define SMSM_OSENTERED		0x00000002
+#define SMSM_SMDWAIT		0x00000004
 #define SMSM_SMDINIT		0x00000008
+#define SMSM_RPCWAIT		0x00000010
 #define SMSM_RPCINIT		0x00000020
 #define SMSM_RESET		0x00000040
 #define SMSM_RSA		0x00000080
@@ -108,6 +116,7 @@ struct msm_dem_slave_data {
 #define SMSM_WFPI		0x00002000
 #define SMSM_SLEEP		0x00004000
 #define SMSM_SLEEPEXIT		0x00008000
+#define SMSM_OEMSBL_RELEASE	0x00010000
 #define SMSM_APPS_REBOOT	0x00020000
 #define SMSM_SYSTEM_POWER_DOWN	0x00040000
 #define SMSM_SYSTEM_REBOOT	0x00080000
@@ -128,13 +137,7 @@ struct msm_dem_slave_data {
 #define SMSM_WKUP_REASON_ALARM	0x00000010
 #define SMSM_WKUP_REASON_RESET	0x00000020
 
-#ifndef CONFIG_ARCH_MSM_SCORPION
-enum smsm_state_item {
-	SMSM_STATE_APPS = 1,
-	SMSM_STATE_MODEM = 3,
-	SMSM_STATE_COUNT,
-};
-#else
+#if defined(CONFIG_MSM_N_WAY_SMD)
 enum smsm_state_item {
 	SMSM_STATE_APPS,
 	SMSM_STATE_MODEM,
@@ -146,18 +149,24 @@ enum smsm_state_item {
 	SMSM_STATE_TIME_MASTER_DEM,
 	SMSM_STATE_COUNT,
 };
+#else
+enum smsm_state_item {
+	SMSM_STATE_APPS = 1,
+	SMSM_STATE_MODEM = 3,
+	SMSM_STATE_COUNT,
+};
 #endif
 
 void *smem_alloc(unsigned id, unsigned size);
 int smsm_change_state(enum smsm_state_item item, uint32_t clear_mask, uint32_t set_mask);
 uint32_t smsm_get_state(enum smsm_state_item item);
 int smsm_set_sleep_duration(uint32_t delay);
-void smsm_print_sleep_info(void);
+int smsm_set_sleep_limit(uint32_t sleep_limit);
+void smsm_print_sleep_info(unsigned wakeup_reason_only);
 
 #define SMEM_NUM_SMD_CHANNELS        64
 
-typedef enum
-{
+typedef enum {
 	/* fixed items */
 	SMEM_PROC_COMM = 0,
 	SMEM_HEAP_INFO,
@@ -213,6 +222,7 @@ typedef enum
 	SMEM_ID_VENDOR1,
 	SMEM_ID_VENDOR2,
 	SMEM_HW_SW_BUILD_ID,
+#if defined(CONFIG_MSM_N_WAY_SMD)
 	SMEM_SMD_BLOCK_PORT_BASE_ID,
 	SMEM_SMD_BLOCK_PORT_PROC0_HEAP = SMEM_SMD_BLOCK_PORT_BASE_ID + SMEM_NUM_SMD_CHANNELS,
 	SMEM_SMD_BLOCK_PORT_PROC1_HEAP = SMEM_SMD_BLOCK_PORT_PROC0_HEAP + SMEM_NUM_SMD_CHANNELS,
@@ -232,7 +242,16 @@ typedef enum
 	SMEM_SMEM_LOG_POWER_WRAP,
 	SMEM_SMEM_LOG_POWER_EVENTS,
 	SMEM_ERR_CRASH_LOG,
-	SMEM_ERR_F3_TRACE_LOG,	
+	SMEM_ERR_F3_TRACE_LOG,
+	SMEM_SMD_BRIDGE_ALLOC_TABLE,
+	SMEM_SMDLITE_TABLE,
+	SMEM_SD_IMG_UPGRADE_STATUS,
+	SMEM_SEFS_INFO,
+#else
+	SMEM_SMD_FIFO_BASE_ID,
+	SMEM_SMEM_LAST = SMEM_SMD_FIFO_BASE_ID + SMEM_NUM_SMD_CHANNELS,
+#endif
+
 	SMEM_NUM_ITEMS,
 } smem_mem_type;
 
@@ -250,69 +269,6 @@ typedef enum
 
 #define SMD_HEADER_SIZE		20
 
-struct smd_alloc_elm {
-	char name[20];
-	uint32_t cid;
-	uint32_t ctype;
-	uint32_t ref_count;
-};
-
-struct smd_half_channel {
-	unsigned state;
-	unsigned char fDSR;
-	unsigned char fCTS;
-	unsigned char fCD;
-	unsigned char fRI;
-	unsigned char fHEAD;
-	unsigned char fTAIL;
-	unsigned char fSTATE;
-	unsigned char fUNUSED;
-	unsigned tail;
-	unsigned head;
-} __attribute__(( aligned(4), packed ));
-
-struct smd_shared_v1 {
-	struct smd_half_channel ch0;
-	unsigned char data0[SMD_BUF_SIZE];
-	struct smd_half_channel ch1;
-	unsigned char data1[SMD_BUF_SIZE];
-};
-
-struct smd_shared_v2 {
-	struct smd_half_channel ch0;
-	struct smd_half_channel ch1;
-};	
-
-struct smd_channel {
-	volatile struct smd_half_channel *send;
-	volatile struct smd_half_channel *recv;
-	unsigned char *send_data;
-	unsigned char *recv_data;
-
-	unsigned fifo_mask;
-	unsigned fifo_size;
-	unsigned current_packet;
-	unsigned n;
-
-	struct list_head ch_list;
-
-	void *priv;
-	void (*notify)(void *priv, unsigned flags);
-
-	int (*read)(struct smd_channel *ch, void *data, int len);
-	int (*write)(struct smd_channel *ch, const void *data, int len);
-	int (*read_avail)(struct smd_channel *ch);
-	int (*write_avail)(struct smd_channel *ch);
-
-	void (*update_state)(struct smd_channel *ch);
-	unsigned last_state;
-	void (*notify_other_cpu)(void);
-	unsigned type;
-
-	char name[32];
-	struct platform_device pdev;
-};
-
 #define SMD_TYPE_MASK		0x0FF
 #define SMD_TYPE_APPS_MODEM	0x000
 #define SMD_TYPE_APPS_DSP	0x001
@@ -322,13 +278,6 @@ struct smd_channel {
 #define SMD_KIND_UNKNOWN	0x000
 #define SMD_KIND_STREAM		0x100
 #define SMD_KIND_PACKET		0x200
-
-extern struct list_head smd_ch_closed_list;
-extern struct list_head smd_ch_list_modem;
-extern struct list_head smd_ch_list_dsp;
-
-extern spinlock_t smd_lock;
-extern spinlock_t smem_lock;
 
 void *smem_find(unsigned id, unsigned size);
 void *smem_item(unsigned id, unsigned *size);

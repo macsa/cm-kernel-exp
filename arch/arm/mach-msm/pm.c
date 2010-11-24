@@ -420,7 +420,7 @@ static int msm_sleep(int sleep_mode, uint32_t sleep_delay, int from_idle)
 #endif
 	if (sleep_mode < MSM_PM_SLEEP_MODE_APPS_SLEEP) {
 		if (msm_pm_debug_mask & MSM_PM_DEBUG_SMSM_STATE)
-			smsm_print_sleep_info();
+			smsm_print_sleep_info(0);
 		saved_vector[0] = msm_pm_reset_vector[0];
 		saved_vector[1] = msm_pm_reset_vector[1];
 		msm_pm_reset_vector[0] = 0xE51FF004; /* ldr pc, 4 */
@@ -456,7 +456,7 @@ static int msm_sleep(int sleep_mode, uint32_t sleep_delay, int from_idle)
 			printk(KERN_INFO "msm_pm_collapse(): returned %d\n",
 			       collapsed);
 		if (msm_pm_debug_mask & MSM_PM_DEBUG_SMSM_STATE)
-			smsm_print_sleep_info();
+			smsm_print_sleep_info(0);
 	} else {
 		msm_arch_idle();
 		rv = 0;
@@ -503,7 +503,7 @@ enter_failed:
 			       "smsm_get_state %x\n", readl(A11S_CLK_SLEEP_EN),
 			       readl(A11S_PWRDOWN), smsm_get_state(PM_SMSM_READ_STATE));
 		if (msm_pm_debug_mask & MSM_PM_DEBUG_SMSM_STATE)
-			smsm_print_sleep_info();
+			smsm_print_sleep_info(1);
 	}
 	msm_irq_exit_sleep2();
 	if (enter_state) {
