@@ -507,6 +507,62 @@ config MSM7X00A_IDLE_SPIN_TIME
 	  Spin time in nanoseconds before ramping down cpu clock and entering
 	  any low power state.
 
+choice
+        prompt "Suspend sleep limit"
+        default MSM7X00A_SLEEP_NO_LIMIT
+        help
+          Allows overriding the sleep limit used.
+
+        config MSM7X00A_SLEEP_NO_LIMIT
+                bool "No sleep limit"
+        help
+          No limit sleep and tcxo shutdown.
+
+        config MSM7X00A_SLEEP_LIMITED_SLEEP
+                bool "Limited sleep"
+        help
+          Do everything except tcxo off.
+
+        config MSM7X00A_SLEEP_NEGATE_SLEEP
+                bool "No sleep"
+        help
+          Prevent arm9 enter sleep mode.
+endchoice
+
+config MSM7X00A_SLEEP_LIMIT
+        int
+        default 0 if MSM7X00A_SLEEP_NO_LIMIT
+        default 1 if MSM7X00A_SLEEP_LIMITED_SLEEP
+        default 2 if MSM7X00A_SLEEP_NEGATE_SLEEP
+
+choice
+    prompt "Idle sleep limit"
+    default MSM7X00A_IDLE_SLEEP_NO_LIMIT
+    help
+      Allows overriding the idle sleep limit used.
+
+    config MSM7X00A_IDLE_SLEEP_NO_LIMIT
+        bool "No sleep limit"
+    help
+      No limit sleep and tcxo shutdown.
+
+    config MSM7X00A_IDLE_SLEEP_LIMITED_SLEEP
+        bool "Limited sleep"
+    help
+      Do everything except tcxo off.
+
+    config MSM7X00A_IDLE_SLEEP_NEGATE_SLEEP
+        bool "No sleep"
+    help
+      Prevent arm9 enter sleep mode.
+endchoice
+
+config MSM7X00A_IDLE_SLEEP_LIMIT
+    int
+    default 0 if MSM7X00A_IDLE_SLEEP_NO_LIMIT
+    default 1 if MSM7X00A_IDLE_SLEEP_LIMITED_SLEEP
+    default 2 if MSM7X00A_IDLE_SLEEP_NEGATE_SLEEP
+
 menuconfig MSM_IDLE_STATS
 	bool "Collect idle statistics"
 	default y
