@@ -21,9 +21,9 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/kernel.h>
-#include <linux/mfd/pm8058.h>
+/*include <linux/mfd/pm8058.h>*/
+#include <linux/mfd/pmic8058.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
 #include <linux/wait.h>
 #include <asm-generic/gpio.h>
 
@@ -32,13 +32,11 @@
 enum {
 	DEBUG_IRQS = 1U << 0,
 };
-static int debug_mask = 0;
+static int debug_mask;
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
 #define REG_HWREV		0x0002  /* PMIC4 revision */
 
-#define REG_IRQ_PERM		0x01a6
-#define REG_IRQ_PERM_BLK_SEL	0x01ac
 #define REG_IRQ_ROOT		0x01bb
 #define REG_IRQ_M_STATUS1	0x01bc
 #define REG_IRQ_M_STATUS2	0x01bd
@@ -64,7 +62,6 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 #define MPP_IRQ_OFFSET		(16 * 8)
 #define GPIO_IRQ_OFFSET		(24 * 8)
 #define KEYPAD_IRQ_OFFSET	(9 * 8 + 2)
-#define CHARGER_IRQ_OFFSET	(1 * 8 + 7)
 
 /* this defines banks of irq space. We want to provide a compact irq space
  * to the kernel, but there several ranges of irqs in an otherwise sparse
@@ -73,7 +70,6 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
  * bank 0 - GPIO IRQs start=(24 * 8) cnt=40 (gpios 0-39)
  * bank 1 - MPP IRQs start=(16 * 8) cnt=12 (mpps 0-11)
  * bank 2 - keypad irqs start=(9*8 + 1) cnt=2
- * bank 3 - charger irqs start=(1*8 + 7) cnt=7 (ends at 2*8 + 5)
  *
  */
 struct pm8058_irq_bank {
@@ -98,11 +94,6 @@ static struct pm8058_irq_bank pm8058_irq_banks[] = {
 		.cnt	= PM8058_NUM_KEYPAD_IRQS,
 		.offset	= KEYPAD_IRQ_OFFSET,
 	},
-	{
-		.start	= PM8058_FIRST_CHARGER_IRQ,
-		.cnt	= PM8058_NUM_CHARGER_IRQS,
-		.offset	= CHARGER_IRQ_OFFSET,
-	},
 };
 #define NUM_IRQ_BANKS		ARRAY_SIZE(pm8058_irq_banks)
 
@@ -114,12 +105,6 @@ struct pm8058_irq_group {
 };
 
 static const struct pm8058_irq_group pm8058_irq_groups[] = {
-	{
-		.stat_reg	= REG_IRQ_M_STATUS1,
-		.valid_mask	= 0x6,
-		.root_mask	= 0x2,
-		.block_offset	= 0,
-	},
 	{
 		.stat_reg	= REG_IRQ_M_STATUS2,
 		.valid_mask	= 0x2,
@@ -157,17 +142,11 @@ struct pm8058 {
 
 	struct gpio_chip		gpio_chip;
 	u8				gpio_flags[PM8058_NUM_GPIOS];
-
-	struct pm8058_platform_data	*pdata;
-
-	struct platform_device		*kp_pdev;
-	struct platform_device		*charger_pdev;
 };
 
 static struct pm8058 *the_pm8058;
 
 static int read_irq_block_reg(struct pm8058 *pmic, u8 blk, u16 reg, u8 *val);
-static int get_curr_irq_stat(struct pm8058 *pmic, unsigned int irq);
 
 int pm8058_readb(struct device *dev, u16 addr, u8 *val)
 {
@@ -243,6 +222,9 @@ int pm8058_gpio_mux_cfg(struct device *dev, unsigned int gpio,
 	if (ret)
 		pr_err("%s: failed writing config for gpio %d (%d)\n", __func__,
 		       gpio, ret);
+
+	pr_info("%s: ok writing config for gpio %d (%d)\n", __func__,
+		       gpio, ret);
 	return ret;
 }
 EXPORT_SYMBOL(pm8058_gpio_mux_cfg);
@@ -255,6 +237,46 @@ int pm8058_gpio_mux(unsigned int gpio, struct pm8058_pin_config *cfg)
 }
 EXPORT_SYMBOL(pm8058_gpio_mux);
 
+int pm8058_gpio_config(int gpio, struct pm8058_gpio *param)
+{
+	struct pm8058_pin_config cfg;
+	struct pm8058 *pmic = dev_get_drvdata(the_pm8058->dev);
+
+	if (param->output_value == 1) {
+		cfg.dir = PM8058_GPIO_OUTPUT_HIGH;
+	} else{
+		cfg.dir = param->direction;
+	}
+
+	cfg.output_buffer = param->output_buffer;
+	cfg.output_value = param->output_value;
+	cfg.pull_up = param->pull;
+	cfg.vin_src = param->vin_sel;
+	cfg.strength = param->out_strength;
+	cfg.func = param->function;
+	cfg.flags = param->inv_int_pol;
+
+	gpio += pmic->gpio_chip.base;
+	return pm8058_gpio_mux(gpio, &cfg);
+}
+EXPORT_SYMBOL(pm8058_gpio_config);
+
+int pm8058_gpio_cfg(int num, int direction, int output_buffer,
+			int output_value, int pull, int vin_sel, int out_strength, int function, int inv_int_pol)
+{
+	struct pm8058_gpio pmic_gpio_setting = {
+		.direction      = (u8)direction,
+		.output_buffer  = (u8)output_buffer,
+		.output_value   = (u8)output_value,
+		.pull           = (u8)pull,
+		.vin_sel        = (u8)vin_sel,
+		.out_strength   = (u8)out_strength,
+		.function       = (u8)function,
+		.inv_int_pol    = (u8)inv_int_pol,
+		};
+	return pm8058_gpio_config(num, &pmic_gpio_setting);
+}
+EXPORT_SYMBOL(pm8058_gpio_cfg);
 /* gpio funcs */
 static int read_gpio_bank(struct pm8058 *pmic, unsigned gpio, u8 bank, u8 *val)
 {
@@ -343,6 +365,12 @@ static int gpio_set_dir(struct pm8058 *pmic, unsigned gpio, int dir)
 	return ret;
 }
 
+int gpio_set_dir_htc(struct device *dev, unsigned gpio, int dir)
+{
+	struct pm8058 *pmic = dev_get_drvdata(dev);
+	return gpio_set_dir(pmic, gpio, dir);
+}
+
 static int pm8058_gpio_direction_in(struct gpio_chip *chip, unsigned gpio)
 {
 	struct pm8058 *pmic = container_of(chip, struct pm8058, gpio_chip);
@@ -373,9 +401,20 @@ static void pm8058_gpio_set(struct gpio_chip *chip, unsigned gpio, int val)
 static int pm8058_gpio_get(struct gpio_chip *chip, unsigned gpio)
 {
 	struct pm8058 *pmic = container_of(chip, struct pm8058, gpio_chip);
+	int ret;
+	u8 val;
 
 	/* XXX: assumes gpio maps 1:1 to irq @ 0 */
-	return get_curr_irq_stat(pmic, gpio);
+	ret = read_irq_block_reg(pmic, pmic->irqs[gpio].blk, REG_IRQ_RT_STATUS,
+				 &val);
+	if (ret) {
+		pr_err("%s: can't read block status\n", __func__);
+		goto done;
+	}
+
+	ret = !!(val & (1 << pmic->irqs[gpio].blk_bit));
+done:
+	return ret;
 }
 
 static int pm8058_gpio_to_irq(struct gpio_chip *chip, unsigned gpio)
@@ -418,63 +457,6 @@ done:
 	return ret;
 }
 
-static int get_curr_irq_stat(struct pm8058 *pmic, unsigned int irq)
-{
-	int ret;
-	u8 val;
-
-	ret = read_irq_block_reg(pmic, pmic->irqs[irq].blk, REG_IRQ_RT_STATUS,
-				 &val);
-	if (ret) {
-		pr_err("%s: can't read irq %d status\n", __func__, irq);
-		goto done;
-	}
-
-	ret = !!(val & (1 << pmic->irqs[irq].blk_bit));
-
-done:
-	return ret;
-}
-
-int pm8058_irq_get_status(struct device *dev, unsigned int irq)
-{
-	struct pm8058 *pmic = dev_get_drvdata(dev);
-
-	if (irq >= PM8058_NUM_IRQS)
-		return -EINVAL;
-	return get_curr_irq_stat(pmic, irq);
-}
-EXPORT_SYMBOL(pm8058_irq_get_status);
-
-static int cfg_irq_blk_bit_perm(struct pm8058 *pmic, u8 blk, u8 mask)
-{
-	int ret;
-	unsigned long flags;
-	u8 tmp;
-
-	spin_lock_irqsave(&pmic->lock, flags);
-	ret = pm8058_writeb(pmic->dev, REG_IRQ_PERM_BLK_SEL, blk);
-	if (ret) {
-		pr_err("%s: error setting block select (%d)\n", __func__, ret);
-		goto done;
-	}
-
-	ret = pm8058_readb(pmic->dev, REG_IRQ_PERM, &tmp);
-	if (ret) {
-		pr_err("%s: error getting (%d)\n", __func__, ret);
-		goto done;
-	}
-
-	ret = pm8058_writeb(pmic->dev, REG_IRQ_PERM, tmp | mask);
-	if (ret)
-		pr_err("%s: error writing %d 0x%x 0x%x (0x%x)\n", __func__,
-		       ret, blk, REG_IRQ_PERM, mask);
-
-done:
-	spin_unlock_irqrestore(&pmic->lock, flags);
-	return ret;
-}
-
 static int _write_irq_blk_bit_cfg(struct pm8058 *pmic, u8 blk, u8 bit, u8 cfg)
 {
 	int ret;
@@ -507,6 +489,7 @@ static int do_irq_master(struct pm8058 *pmic, int group)
 	int j;
 	int ret;
 	u8 val;
+	unsigned long flags;
 	unsigned long stat;
 
 	ret = pm8058_readb(pmic->dev, pm8058_irq_groups[group].stat_reg, &val);
@@ -518,7 +501,7 @@ static int do_irq_master(struct pm8058 *pmic, int group)
 	if (debug_mask & DEBUG_IRQS)
 		pr_info("%s: master %d %02x\n", __func__, group, val);
 	stat = val & pm8058_irq_groups[group].valid_mask;
-	for_each_set_bit(i, &stat, BITS_PER_BYTE) {
+	for_each_bit(i, &stat, BITS_PER_BYTE) {
 		u8 blk = pm8058_irq_groups[group].block_offset + i;
 		unsigned long blk_stat;
 
@@ -529,7 +512,7 @@ static int do_irq_master(struct pm8058 *pmic, int group)
 		}
 
 		blk_stat = val;
-		for_each_set_bit(j, &blk_stat, BITS_PER_BYTE) {
+		for_each_bit(j, &blk_stat, BITS_PER_BYTE) {
 			u8 irq = blk * 8 + j;
 
 			/* XXX: we should mask these out and count em' */
@@ -537,7 +520,12 @@ static int do_irq_master(struct pm8058 *pmic, int group)
 				pr_warning("Unexpected pmirq %d\n", irq);
 				continue;
 			}
+
+			local_irq_save(flags);
+			if (debug_mask & DEBUG_IRQS)
+				pr_info("%s: irq %d is fired\n", __func__, pmic->pmirqs[irq] + pmic->irq_base);
 			generic_handle_irq(pmic->pmirqs[irq] + pmic->irq_base);
+			local_irq_restore(flags);
 		}
 	}
 
@@ -545,18 +533,17 @@ done:
 	return ret;
 }
 
-static void pm8058_irq_handler(unsigned int irq, struct irq_desc *desc)
+static irqreturn_t pm8058_irq_handler(int irq, void *dev)
 {
-	struct pm8058 *pmic = get_irq_data(irq);
+	struct pm8058 *pmic = dev;
 	int ret;
 	int i;
 	u8 root;
 
-	desc->chip->ack(irq);
 	ret = pm8058_readb(pmic->dev, REG_IRQ_ROOT, &root);
 	if (ret) {
 		pr_err("%s: Can't read root status\n", __func__);
-		return;
+		goto done;
 	}
 
 	if (debug_mask & DEBUG_IRQS)
@@ -565,6 +552,9 @@ static void pm8058_irq_handler(unsigned int irq, struct irq_desc *desc)
 		if (root & pm8058_irq_groups[i].root_mask)
 			do_irq_master(pmic, i);
 	}
+
+done:
+	return IRQ_HANDLED;
 }
 
 static void pm8058_irq_ack(unsigned int _irq)
@@ -630,28 +620,25 @@ static int pm8058_irq_set_type(unsigned int _irq, unsigned int flow_type)
 	struct pm8058_irq_info *irq_info = &pmic->irqs[irq];
 	unsigned long flags;
 	int ret;
-	u8 cfg;
 
-	cfg = IRQ_CFG_MASK_RE | IRQ_CFG_MASK_FE;
+	spin_lock_irqsave(&pmic->lock, flags);
+	irq_info->cfg = IRQ_CFG_MASK_RE | IRQ_CFG_MASK_FE;
+
 	if (flow_type & (IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING)) {
 		if (flow_type & IRQF_TRIGGER_RISING)
-			cfg &= ~IRQ_CFG_MASK_RE;
+			irq_info->cfg &= ~IRQ_CFG_MASK_RE;
 		if (flow_type & IRQF_TRIGGER_FALLING)
-			cfg &= ~IRQ_CFG_MASK_FE;
-		__set_irq_handler_unlocked(_irq, handle_edge_irq);
+			irq_info->cfg &= ~IRQ_CFG_MASK_FE;
 	} else {
-		cfg |= IRQ_CFG_LVL_SEL;
+		irq_info->cfg |= IRQ_CFG_LVL_SEL;
 		if (flow_type & IRQF_TRIGGER_HIGH)
-			cfg &= ~IRQ_CFG_MASK_RE;
+			irq_info->cfg &= ~IRQ_CFG_MASK_RE;
 		else
-			cfg &= ~IRQ_CFG_MASK_FE;
-		__set_irq_handler_unlocked(_irq, handle_level_irq);
+			irq_info->cfg &= ~IRQ_CFG_MASK_FE;
 	}
 
 	/* in case the irq was masked when the type was set, we don't want
 	 * to unmask it */
-	spin_lock_irqsave(&pmic->lock, flags);
-	irq_info->cfg = cfg;
 	irq_info->cfg_val = irq_info->cfg | irq_info->mask;
 	ret = write_irq_config_locked(pmic, irq,
 				      irq_info->cfg_val | IRQ_CFG_CLR);
@@ -714,7 +701,8 @@ static int pm8058_irq_init(struct pm8058 *pmic, unsigned int irq_base)
 		for (j = 0; j < bank->cnt; ++j) {
 			unsigned int irq = bank->start + j;
 			unsigned int pmirq = bank->offset + j;
-
+			pr_info("%s: j=%d,start=%d,irq =%d,cnt = %d,PM8058_NUM_IRQS = %d'\n",
+				__func__, j, bank->start, irq, bank->cnt, PM8058_NUM_IRQS);
 			BUG_ON(irq >= PM8058_NUM_IRQS);
 
 			/* by default mask the irq */
@@ -728,115 +716,90 @@ static int pm8058_irq_init(struct pm8058 *pmic, unsigned int irq_base)
 
 			BUG_ON(pmic->irqs[irq].blk >= NUM_BLOCKS);
 
-			/* XXX: slightly inefficient since we can end up
-			 * doing it 8 times per block per bank, but it's
-			 * the easiet. Optimize if gets too slow. */
-
-			/* ensure we set the permissions for the irqs in
-			 * this bank */
-			cfg_irq_blk_bit_perm(pmic, pmic->irqs[irq].blk,
-					     1 << pmic->irqs[irq].blk_bit);
-
 			set_irq_chip(irq_base + irq, &pm8058_irq_chip);
 			set_irq_chip_data(irq_base + irq, pmic);
 			set_irq_handler(irq_base + irq, handle_edge_irq);
 			set_irq_flags(irq_base + irq, IRQF_VALID);
 		}
-
 	}
 
 	return 0;
-}
-
-static struct platform_device *add_child_device(
-			struct pm8058 *pmic, const char *name, void *pdata,
-			struct resource *res, int num_res)
-{
-	struct platform_device *pdev;
-	int ret;
-
-	pdev = platform_device_alloc(name, -1);
-	if (!pdev) {
-		pr_err("%s: cannot allocate pdev for '%s'\n", __func__, name);
-		ret = -ENOMEM;
-		goto err;
-	}
-
-	pdev->dev.parent = pmic->dev;
-	pdev->dev.platform_data = pdata;
-
-	ret = platform_device_add_resources(pdev, res, num_res);
-	if (ret) {
-		pr_err("%s: can't add resources for '%s'\n", __func__, name);
-		goto err;
-	}
-
-	ret = platform_device_add(pdev);
-	if (ret) {
-		pr_err("%s: cannot add child platform device '%s'\n", __func__,
-		       name);
-		goto err;
-	}
-	return pdev;
-
-err:
-	if (pdev)
-		platform_device_put(pdev);
-	return ERR_PTR(ret);
 }
 
 static int add_keypad_device(struct pm8058 *pmic, void *pdata)
 {
 	struct platform_device *pdev;
-	struct resource irq_res[] = {
-		{
-			.start	= pmic->irq_base + PM8058_KEYPAD_IRQ,
-			.end	= pmic->irq_base + PM8058_KEYPAD_IRQ,
-			.flags	= IORESOURCE_IRQ,
-			.name	= "kp_sense",
-		},
-		{
-			.start	= pmic->irq_base + PM8058_KEYPAD_STUCK_IRQ,
-			.end	= pmic->irq_base + PM8058_KEYPAD_STUCK_IRQ,
-			.flags	= IORESOURCE_IRQ,
-			.name	= "kp_stuck",
-		}
-	};
+	struct resource irq_res[2];
+	int ret;
 
-	pdev = add_child_device(pmic, "pm8058-keypad", pdata, irq_res,
-				ARRAY_SIZE(irq_res));
-	if (IS_ERR(pdev))
-		return PTR_ERR(pdev);
+	pdev = platform_device_alloc("pm8058-keypad", -1);
+	if (!pdev) {
+		pr_err("%s: cannot allocate pdev for keypad\n", __func__);
+		return -ENOMEM;
+	}
 
-	pmic->kp_pdev = pdev;
+	pdev->dev.parent = pmic->dev;
+	pdev->dev.platform_data = pdata;
+
+	memset(&irq_res, 0, sizeof(irq_res));
+	irq_res[0].start = pmic->irq_base + PM8058_KEYPAD_IRQ;
+	irq_res[0].end = irq_res[0].start;
+	irq_res[0].flags = IORESOURCE_IRQ;
+	irq_res[0].name = "kp_sense";
+	irq_res[1].start = pmic->irq_base + PM8058_KEYPAD_STUCK_IRQ;
+	irq_res[1].end = irq_res[1].start;
+	irq_res[1].flags = IORESOURCE_IRQ;
+	irq_res[1].name = "kp_stuck";
+	ret = platform_device_add_resources(pdev, irq_res, ARRAY_SIZE(irq_res));
+	if (ret) {
+		pr_err("%s: can't add irq resources for keypad'\n", __func__);
+		goto err;
+	}
+
+	ret = platform_device_add(pdev);
+	if (ret) {
+		pr_err("%s: cannot add child keypad platform device for\n",
+		       __func__);
+		goto err;
+	}
+
 	return 0;
+
+err:
+	if (pdev)
+		platform_device_put(pdev);
+	return ret;
 }
 
-static int add_charger_device(struct pm8058 *pmic, void *pdata)
+static int add_sub_device(struct pm8058 *pmic, struct pm8058_sub_devices_data *pdata, const char *name)
 {
 	struct platform_device *pdev;
-	struct resource irq_res[] = {
-		{
-			.start	= pmic->irq_base + PM8058_CHGVAL_IRQ,
-			.end	= pmic->irq_base + PM8058_CHGVAL_IRQ,
-			.flags	= IORESOURCE_IRQ,
-			.name	= "chgval_irq",
-		},
-		{
-			.start	= pmic->irq_base + PM8058_FASTCHG_IRQ,
-			.end	= pmic->irq_base + PM8058_FASTCHG_IRQ,
-			.flags	= IORESOURCE_IRQ,
-			.name	= "fastchg_irq",
-		}
-	};
+	int ret;
 
-	pdev = add_child_device(pmic, "pm8058-charger", pdata, irq_res,
-				ARRAY_SIZE(irq_res));
-	if (IS_ERR(pdev))
-		return PTR_ERR(pdev);
+	pr_info("%s: add_sub_device name %s\n", __func__, name);
+	pdev = platform_device_alloc(name, -1);
+	if (!pdev) {
+		pr_err("%s: cannot allocate pdev for %s\n", __func__, name);
+		return -ENOMEM;
+	}
 
-	pmic->charger_pdev = pdev;
+	pdev->dev.parent = pmic->dev;
+	platform_set_drvdata(pdev, pdata->driver_data);
+	pdev->dev.platform_data = pdata;
+
+	ret = platform_device_add(pdev);
+	if (ret) {
+		pr_err("%s: cannot add child  platform device for %s\n",
+		       __func__, name);
+		goto err;
+	}
+
 	return 0;
+
+err:
+	if (pdev)
+		platform_device_put(pdev);
+	return ret;
 }
 
 static int pm8058_probe(struct platform_device *pdev)
@@ -844,7 +807,7 @@ static int pm8058_probe(struct platform_device *pdev)
 	struct pm8058_platform_data *pdata = pdev->dev.platform_data;
 	struct pm8058 *pmic;
 	int devirq;
-	int ret;
+	int ret, i;
 	u8 val;
 
 	if (!pdata) {
@@ -874,7 +837,6 @@ static int pm8058_probe(struct platform_device *pdev)
 	pmic->irq_base = pdata->irq_base;
 	pmic->devirq = devirq;
 	spin_lock_init(&pmic->lock);
-	pmic->pdata = pdata;
 	platform_set_drvdata(pdev, pmic);
 
 	ret = pm8058_irq_init(pmic, pmic->irq_base);
@@ -893,10 +855,15 @@ static int pm8058_probe(struct platform_device *pdev)
 		goto err_gpiochip_add;
 	}
 
-	set_irq_type(devirq, IRQ_TYPE_LEVEL_LOW);
-	set_irq_data(devirq, pmic);
-	set_irq_chained_handler(devirq, pm8058_irq_handler);
-	set_irq_wake(devirq, 1);
+	ret = request_irq(devirq, pm8058_irq_handler, IRQF_TRIGGER_LOW,
+			  "pm8058-irq", pmic);
+	if (ret) {
+		pr_err("%s: can't request device irq\n", __func__);
+		goto err_request_irq;
+	} else {
+		set_irq_data(devirq, (void *)pmic);
+		set_irq_wake(devirq, 1);
+	}
 
 	the_pm8058 = pmic;
 
@@ -915,25 +882,20 @@ static int pm8058_probe(struct platform_device *pdev)
 			goto err_add_kp_dev;
 		}
 	}
-
-	if (pdata->charger_pdata) {
-		ret = add_charger_device(pmic, pdata->charger_pdata);
-		if (ret) {
-			pr_err("%s: can't add child charger dev\n", __func__);
-			goto err_add_charger_dev;
-		}
+	for (i = 0; i < pdata->num_subdevs; i++) {
+		pr_info("%s: %s\n", __func__, pdata->sub_devices_htc[i].name);
+		pdata->sub_devices_htc[i].driver_data = pmic;
+		add_sub_device(pmic, &(pdata->sub_devices_htc[i]), pdata->sub_devices_htc[i].name);
 	}
 
+	pr_info("%s: done\n", __func__);
 	return 0;
 
-err_add_charger_dev:
-	if (pmic->kp_pdev)
-		platform_device_put(pmic->kp_pdev);
 err_add_kp_dev:
 err_pdata_init:
 	the_pm8058 = NULL;
-	set_irq_wake(devirq, 0);
-	set_irq_chained_handler(devirq, NULL);
+	free_irq(devirq, pmic);
+err_request_irq:
 	WARN_ON(gpiochip_remove(&pmic->gpio_chip));
 err_gpiochip_add:
 err_irq_init:
@@ -953,6 +915,7 @@ static struct platform_driver pm8058_driver = {
 
 static int __init pm8058_init(void)
 {
+	pr_info("%s: PMIC 8058\n", __func__);
 	return platform_driver_register(&pm8058_driver);
 }
 postcore_initcall(pm8058_init);
