@@ -49,9 +49,7 @@
 #include <mach/board.h>
 #include <mach/board_htc.h>
 #include <mach/msm_serial_hs.h>
-#ifdef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
 #include <mach/bcm_bt_lpm.h>
-#endif
 
 #include <mach/htc_usb.h>
 #include <mach/hardware.h>
@@ -2232,7 +2230,7 @@ static struct platform_device vision_flashlight_device = {
 		.platform_data	= &vision_flashlight_data,
 	},
 };
-#if defined(CONFIG_SERIAL_MSM_HS) && defined(CONFIG_SERIAL_MSM_HS_PURE_ANDROID)
+#if defined(CONFIG_SERIAL_MSM_HS)
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
 	.rx_wakeup_irq = -1,
 	.inject_rx_on_wakeup = 0,
@@ -2277,51 +2275,11 @@ static int __init parse_tag_bdaddr(const struct tag *tag)
 }
 
 __tagtable(ATAG_BDADDR, parse_tag_bdaddr);
-
-#elif defined(CONFIG_SERIAL_MSM_HS)
-static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
-	.rx_wakeup_irq = MSM_GPIO_TO_INT(VISION_GPIO_BT_HOST_WAKE),
-	.inject_rx_on_wakeup = 0,
-	.cpu_lock_supported = 1,
-
-	/* for bcm */
-	.bt_wakeup_pin_supported = 1,
-	.bt_wakeup_pin = VISION_GPIO_BT_CHIP_WAKE,
-	.host_wakeup_pin = VISION_GPIO_BT_HOST_WAKE,
-
-};
-
-/* for bcm */
-static char bdaddress[20];
-extern unsigned char *get_bt_bd_ram(void);
-
-static void bt_export_bd_address(void)
-{
-	unsigned char cTemp[6];
-
-	memcpy(cTemp, get_bt_bd_ram(), 6);
-	sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x",
-		cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
-	printk(KERN_INFO "YoYo--BD_ADDRESS=%s\n", bdaddress);
-}
-
-module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
-
-static char bt_chip_id[10] = "bcm4329";
-module_param_string(bt_chip_id, bt_chip_id, sizeof(bt_chip_id), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bt_chip_id, "BT's chip id");
-
-static char bt_fw_version[10] = "v2.0.38";
-module_param_string(bt_fw_version, bt_fw_version, sizeof(bt_fw_version), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bt_fw_version, "BT's fw version");
 #endif
 
 static struct platform_device *devices[] __initdata = {
 	&msm_device_uart2,
-#ifdef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
 	&bcm_bt_lpm_device,
-#endif
 	&msm_device_smd,
 	&vision_rfkill,
 #ifdef CONFIG_I2C_SSBI
@@ -2615,11 +2573,6 @@ static void __init vision_init(void)
 
 	msm_clock_init(msm_clocks_7x30, msm_num_clocks_7x30);
 
-	#ifndef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
-	/* for bcm */
-	bt_export_bd_address();
-	#endif
-
 #if defined(CONFIG_MSM_SERIAL_DEBUGGER)
 	if (!opt_disable_uart2)
 		msm_serial_debug_init(MSM_UART2_PHYS, INT_UART2,
@@ -2630,9 +2583,6 @@ static void __init vision_init(void)
 
 #ifdef CONFIG_SERIAL_MSM_HS
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
-	#ifndef CONFIG_SERIAL_MSM_HS_PURE_ANDROID
-	msm_device_uart_dm1.name = "msm_serial_hs_bcm";	/* for bcm */
-	#endif
 	msm_add_serial_devices(3);
 #else
 	msm_add_serial_devices(0);
