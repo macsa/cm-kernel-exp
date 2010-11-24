@@ -119,6 +119,7 @@ obj-$(CONFIG_MACH_BRAVOC) += board-bravo-smb329.o
 # MSM7x30 boards
 obj-$(CONFIG_ARCH_MSM7X30) += panel-samsungwvga-tl2796a.o panel-samsungwvga-s6e63m0.o panel-sonywvga-s6d16a0x21-7x30.o
 obj-$(CONFIG_ARCH_MSM7X30) += htc_wifi_nvs.o htc_awb_cal.o
+obj-$(CONFIG_ARCH_MSM7X30) += msm_vibrator.o
 obj-$(CONFIG_MACH_GLACIER)+= board-glacier.o
 obj-$(CONFIG_MACH_GLACIER)+= board-glacier-keypad.o
 obj-$(CONFIG_MACH_GLACIER)+= board-glacier-microp.o
