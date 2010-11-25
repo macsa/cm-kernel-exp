@@ -894,6 +894,13 @@ config HTC_HEADSET_MICROP
         help
           Provides support of HTC Micro-P headset detection.
 
+config HTC_HEADSET_PMIC
+        tristate "HTC PMIC headset detection driver"
+        depends on HTC_HEADSET_MGR
+        default n
+        help
+          Provides support of HTC PMIC headset detection.
+
 config VIRTUAL_KPANIC_PARTITION
 	bool "Create virtual kpanic partition"
 	default n

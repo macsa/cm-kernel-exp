@@ -155,6 +155,8 @@ obj-$(CONFIG_MICROP_COMMON) += atmega_microp_common.o
 obj-$(CONFIG_HTC_HEADSET_MGR) += htc_headset_mgr.o
 obj-$(CONFIG_HTC_HEADSET_GPIO) += htc_headset_gpio.o
 obj-$(CONFIG_HTC_HEADSET_MICROP) += htc_headset_microp.o
+obj-$(CONFIG_HTC_HEADSET_PMIC) += htc_headset_pmic.o
+
 obj-$(CONFIG_PERFLOCK) += perflock.o
 obj-$(CONFIG_PERFLOCK) += htc_set_perflock.o
 

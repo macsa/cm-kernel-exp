@@ -21,6 +21,7 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/mfd/pmic8058.h>
+#include <linux/slab.h>
 
 #include <mach/msm_rpcrouter.h>
 
