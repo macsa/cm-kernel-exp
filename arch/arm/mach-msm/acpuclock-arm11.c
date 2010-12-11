@@ -135,8 +135,6 @@ static struct clkctl_acpu_speed  acpu_freq_tbl[] = {
 };
 #endif
 
-
-#ifdef CONFIG_CPU_FREQ_TABLE
 static struct cpufreq_frequency_table freq_table[] = {
 	{ 0, 122880 },
 	{ 1, 128000 },
@@ -145,7 +143,6 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{ 4, 528000 },
 	{ 5, CPUFREQ_TABLE_END },
 };
-#endif
 
 static int pc_pll_request(unsigned id, unsigned on)
 {

@@ -412,10 +412,10 @@ config ARCH_IOP33X
 	  Support for Intel's IOP33X (XScale) family of processors.
 
 config ARCH_IXP23XX
- 	bool "IXP23XX-based"
+	bool "IXP23XX-based"
 	depends on MMU
 	select CPU_XSC3
- 	select PCI
+	select PCI
 	select ARCH_USES_GETTIMEOFFSET
 	help
 	  Support for Intel's IXP23xx (XScale) family of processors.
@@ -583,8 +583,11 @@ config ARCH_PXA
 	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
 
 config ARCH_MSM
-	bool "Qualcomm MSM"
-	select HAVE_CLK
+	bool "Qualcomm MSM/QSD"
+	select ARCH_HAS_CPUFREQ
+	select GENERIC_GPIO
+	select ARCH_REQUIRE_GPIOLIB
+	select GENERIC_TIME
 	select GENERIC_CLOCKEVENTS
 	help
 	  Support for Qualcomm MSM/QSD based systems.  This runs on the
@@ -724,7 +727,7 @@ config ARCH_LH7A40X
 	select ARCH_USES_GETTIMEOFFSET
 	help
 	  Say Y here for systems based on one of the Sharp LH7A40X
-	  System on a Chip processors.  These CPUs include an ARM922T
+	  System on a Chip processors.	These CPUs include an ARM922T
 	  core with a wide array of integrated devices for
 	  hand-held and low-power applications.
 
@@ -1189,7 +1192,7 @@ config LOCAL_TIMERS
 	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_U8500)
 	help
 	  Enable support for local timers on SMP platforms, rather then the
-	  legacy IPI broadcast method.  Local timers allows the system
+	  legacy IPI broadcast method.	Local timers allows the system
 	  accounting to be spread across the timer interval, preventing a
 	  "thundering herd" at every timer tick.
 
@@ -1293,6 +1296,13 @@ config HIGHPTE
 	bool "Allocate 2nd-level pagetables from highmem"
 	depends on HIGHMEM
 	depends on !OUTER_CACHE
+
+config VMALLOC_RESERVE
+	hex "Reserved vmalloc space"
+	default 0x08000000
+	depends on MMU
+	help
+	  Reserved vmalloc space if not specified on the kernel commandline.
 
 config HW_PERF_EVENTS
 	bool "Enable hardware performance counter support for perf events"
@@ -1422,7 +1432,7 @@ config ZBOOT_ROM
 	depends on ZBOOT_ROM_TEXT != ZBOOT_ROM_BSS
 	help
 	  Say Y here if you intend to execute your compressed kernel image
-	  (zImage) directly from ROM or flash.  If unsure, say N.
+	  (zImage) directly from ROM or flash.	If unsure, say N.
 
 config CMDLINE
 	string "Default kernel command string"
@@ -1472,7 +1482,7 @@ config XIP_PHYS_ADDR
 	default "0x00080000"
 	help
 	  This is the physical address in your flash memory the kernel will
-	  be linked for and stored to.  This address is dependent on your
+	  be linked for and stored to.	This address is dependent on your
 	  own flash usage.
 
 config KEXEC
@@ -1480,7 +1490,7 @@ config KEXEC
 	depends on EXPERIMENTAL
 	help
 	  kexec is a system call that implements the ability to shutdown your
-	  current kernel, and to start another kernel.  It is like a reboot
+	  current kernel, and to start another kernel.	It is like a reboot
 	  but it is independent of the system firmware.   And like a reboot
 	  you can start any kernel with it, not just Linux.
 

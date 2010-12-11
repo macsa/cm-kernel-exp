@@ -431,7 +431,7 @@ config AB8500_CORE
 	  This chip embeds various other multimedia funtionalities as well.
 
 config AB3550_CORE
-        bool "ST-Ericsson AB3550 Mixed Signal Circuit core functions"
+	bool "ST-Ericsson AB3550 Mixed Signal Circuit core functions"
 	select MFD_CORE
 	depends on I2C=y && GENERIC_HARDIRQS && ABX500_CORE
 	help
@@ -481,6 +481,14 @@ config MFD_JANZ_CMODIO
 	  carrier board. This device is a PCI to MODULbus bridge which may
 	  host many different types of MODULbus daughterboards, including
 	  CAN and GPIO controllers.
+
+config PMIC8058
+	tristate "PMIC8058 Power Management chip"
+	depends on I2C && ARCH_MSM7X30
+	default y if I2C && ARCH_MSM7X30
+	select MFD_CORE
+	help
+	  Say yes here for Qualcomm PM8058 chip.
 
 endif # MFD_SUPPORT
 

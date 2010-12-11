@@ -24,7 +24,7 @@
 
 #if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V7)
 
-		.macro	addruart, rx, tmp
+		.macro	addruart, rx
 		.endm
 
 		.macro	senduart, rd, rx
@@ -49,29 +49,9 @@
 1002:
 		.endm
 
-#elif defined(CONFIG_CPU_V7)
-
-		.macro	addruart, rx, tmp
-		.endm
-
-		.macro	senduart, rd, rx
-		mcr	p14, 0, \rd, c0, c5, 0
-		.endm
-
-		.macro	busyuart, rd, rx
-busy:		mrc	p14, 0, pc, c0, c1, 0
-		bcs	busy
-		.endm
-
-		.macro	waituart, rd, rx
-wait:		mrc	p14, 0, pc, c0, c1, 0
-		bcs	wait
-
-		.endm
-
 #elif defined(CONFIG_CPU_XSCALE)
 
-		.macro	addruart, rx, tmp
+		.macro	addruart, rx
 		.endm
 
 		.macro	senduart, rd, rx
@@ -98,7 +78,7 @@ wait:		mrc	p14, 0, pc, c0, c1, 0
 
 #else
 
-		.macro	addruart, rx, tmp
+		.macro	addruart, rx
 		.endm
 
 		.macro	senduart, rd, rx
@@ -164,7 +144,7 @@ ENDPROC(printhex2)
 		.ltorg
 
 ENTRY(printascii)
-		addruart r3, r1
+		addruart r3
 		b	2f
 1:		waituart r2, r3
 		senduart r1, r3
@@ -180,7 +160,7 @@ ENTRY(printascii)
 ENDPROC(printascii)
 
 ENTRY(printch)
-		addruart r3, r1
+		addruart r3
 		mov	r1, r0
 		mov	r0, #0
 		b	1b

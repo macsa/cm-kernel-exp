@@ -162,7 +162,7 @@ config LEDS_GPIO_OF
 	default y
 	help
 	  Let the leds-gpio driver drive LEDs which have been defined as
-	  of_platform devices.  For instance, LEDs which are listed in a "dts"
+	  of_platform devices.	For instance, LEDs which are listed in a "dts"
 	  file.
 
 config LEDS_LP3944
@@ -192,13 +192,13 @@ config LEDS_CLEVO_MAIL
 
 	  This module can drive the mail LED for the following notebooks:
 
-	  	Clevo D400P
-	  	Clevo D410J
-	  	Clevo D410V
-	  	Clevo D400V/D470V (not tested, but might work)
-	  	Clevo M540N
-	  	Clevo M5x0N (not tested, but might work)
-	  	Positivo Mobile (Clevo M5x0V)
+		Clevo D400P
+		Clevo D410J
+		Clevo D410V
+		Clevo D400V/D470V (not tested, but might work)
+		Clevo M540N
+		Clevo M5x0N (not tested, but might work)
+		Positivo Mobile (Clevo M5x0V)
 
 	  If your model is not listed here you can try the "nodetect"
 	  module parameter.
@@ -219,7 +219,7 @@ config LEDS_WM831X_STATUS
 	depends on MFD_WM831X
 	help
 	  This option enables support for the status LEDs of the WM831x
-          series of PMICs.
+	  series of PMICs.
 
 config LEDS_WM8350
 	tristate "LED Support for WM8350 AudioPlus PMIC"
@@ -301,6 +301,13 @@ config LEDS_MC13783
 	help
 	  This option enable support for on-chip LED drivers found
 	  on Freescale Semiconductor MC13783 PMIC.
+
+config LEDS_PM8058
+	tristate "LED Support for PM8058"
+	depends on PMIC8058_PWM
+	help
+	  This option enables support for LEDs connected to PM8058
+	  LED driver chips accessed via the SSBI bus and rpc.
 
 config LEDS_TRIGGERS
 	bool "LED Trigger support"

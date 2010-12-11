@@ -5,18 +5,18 @@
  *
  *  Copyright (C) 1991, 1992  Linus Torvalds
  *
- *  1997-01-28  Modified by Finn Arne Gangstad to make timers scale better.
+ *  1997-01-28	Modified by Finn Arne Gangstad to make timers scale better.
  *
- *  1997-09-10  Updated NTP code according to technical memorandum Jan '96
- *              "A Kernel Model for Precision Timekeeping" by Dave Mills
- *  1998-12-24  Fixed a xtime SMP race (we need the xtime_lock rw spinlock to
- *              serialize accesses to xtime/lost_ticks).
- *                              Copyright (C) 1998  Andrea Arcangeli
- *  1999-03-10  Improved NTP compatibility by Ulrich Windl
+ *  1997-09-10	Updated NTP code according to technical memorandum Jan '96
+ *		"A Kernel Model for Precision Timekeeping" by Dave Mills
+ *  1998-12-24	Fixed a xtime SMP race (we need the xtime_lock rw spinlock to
+ *		serialize accesses to xtime/lost_ticks).
+ *				Copyright (C) 1998  Andrea Arcangeli
+ *  1999-03-10	Improved NTP compatibility by Ulrich Windl
  *  2002-05-31	Move sys_sysinfo here and make its locking sane, Robert Love
- *  2000-10-05  Implemented scalable SMP per-CPU timer handling.
- *                              Copyright (C) 2000, 2001, 2002  Ingo Molnar
- *              Designed by David S. Miller, Alexey Kuznetsov and Ingo Molnar
+ *  2000-10-05	Implemented scalable SMP per-CPU timer handling.
+ *				Copyright (C) 2000, 2001, 2002	Ingo Molnar
+ *		Designed by David S. Miller, Alexey Kuznetsov and Ingo Molnar
  */
 
 #include <linux/kernel_stat.h>
@@ -260,7 +260,7 @@ EXPORT_SYMBOL_GPL(round_jiffies_relative);
  * @cpu: the processor number on which the timeout will happen
  *
  * This is the same as __round_jiffies() except that it will never
- * round down.  This is useful for timeouts for which the exact time
+ * round down.	This is useful for timeouts for which the exact time
  * of firing does not matter too much, as long as they don't fire too
  * early.
  */
@@ -276,7 +276,7 @@ EXPORT_SYMBOL_GPL(__round_jiffies_up);
  * @cpu: the processor number on which the timeout will happen
  *
  * This is the same as __round_jiffies_relative() except that it will never
- * round down.  This is useful for timeouts for which the exact time
+ * round down.	This is useful for timeouts for which the exact time
  * of firing does not matter too much, as long as they don't fire too
  * early.
  */
@@ -294,7 +294,7 @@ EXPORT_SYMBOL_GPL(__round_jiffies_up_relative);
  * @j: the time in (absolute) jiffies that should be rounded
  *
  * This is the same as round_jiffies() except that it will never
- * round down.  This is useful for timeouts for which the exact time
+ * round down.	This is useful for timeouts for which the exact time
  * of firing does not matter too much, as long as they don't fire too
  * early.
  */
@@ -309,7 +309,7 @@ EXPORT_SYMBOL_GPL(round_jiffies_up);
  * @j: the time in (relative) jiffies that should be rounded
  *
  * This is the same as round_jiffies_relative() except that it will never
- * round down.  This is useful for timeouts for which the exact time
+ * round down.	This is useful for timeouts for which the exact time
  * of firing does not matter too much, as long as they don't fire too
  * early.
  */
@@ -582,7 +582,7 @@ static void __init_timer(struct timer_list *timer,
  * @timer: the timer to be initialized
  * @name: name of the timer
  * @key: lockdep class key of the fake lock used for tracking timer
- *       sync lock dependencies
+ *	 sync lock dependencies
  *
  * init_timer_key() must be done to a timer prior calling *any* of the
  * other timer functions.
@@ -742,7 +742,7 @@ EXPORT_SYMBOL(mod_timer_pending);
  *   2) calculate the highest bit where the expires and new max are different
  *   3) use this bit to make a mask
  *   4) use the bitmask to round down the maximum time, so that all last
- *      bits are zeros
+ *	bits are zeros
  */
 static inline
 unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
@@ -1377,7 +1377,7 @@ SYSCALL_DEFINE0(getgid)
 SYSCALL_DEFINE0(getegid)
 {
 	/* Only we change this so SMP safe */
-	return  current_egid();
+	return	current_egid();
 }
 
 #endif
@@ -1750,3 +1750,60 @@ unsigned long msleep_interruptible(unsigned int msecs)
 }
 
 EXPORT_SYMBOL(msleep_interruptible);
+
+static void do_nsleep(unsigned int nsecs, struct hrtimer_sleeper *sleeper,
+	int sigs)
+{
+	enum hrtimer_mode mode = HRTIMER_MODE_REL;
+	int state = sigs ? TASK_INTERRUPTIBLE : TASK_UNINTERRUPTIBLE;
+
+	/*
+	 * This is really just a reworked and simplified version
+	 * of do_nanosleep().
+	 */
+	hrtimer_init(&sleeper->timer, CLOCK_MONOTONIC, mode);
+	sleeper->timer._expires = ktime_set(0, nsecs);
+	hrtimer_init_sleeper(sleeper, current);
+
+	do {
+		set_current_state(state);
+		hrtimer_start(&sleeper->timer, sleeper->timer._expires, mode);
+		if (sleeper->task)
+			schedule();
+		hrtimer_cancel(&sleeper->timer);
+		mode = HRTIMER_MODE_ABS;
+	} while (sleeper->task && !(sigs && signal_pending(current)));
+}
+
+/**
+ * msleep - sleep safely even with waitqueue interruptions
+ * @msecs: Time in milliseconds to sleep for
+ */
+void hr_msleep(unsigned int msecs)
+{
+	struct hrtimer_sleeper sleeper;
+
+	do_nsleep(msecs * NSEC_PER_MSEC, &sleeper, 0);
+}
+
+EXPORT_SYMBOL(hr_msleep);
+
+/**
+ * msleep_interruptible - sleep waiting for signals
+ * @msecs: Time in milliseconds to sleep for
+ */
+unsigned long hr_msleep_interruptible(unsigned int msecs)
+{
+	struct hrtimer_sleeper sleeper;
+	ktime_t left;
+
+	do_nsleep(msecs * NSEC_PER_MSEC, &sleeper, 1);
+
+	if (!sleeper.task)
+		return 0;
+	left = ktime_sub(sleeper.timer._expires,
+			 sleeper.timer.base->get_time());
+	return max(((long) ktime_to_ns(left))/(long)NSEC_PER_MSEC, 1L);
+}
+
+EXPORT_SYMBOL(hr_msleep_interruptible);

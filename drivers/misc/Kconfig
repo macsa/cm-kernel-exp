@@ -62,7 +62,7 @@ config ATMEL_PWM
 	depends on AVR32 || ARCH_AT91SAM9263 || ARCH_AT91SAM9RL || ARCH_AT91CAP9
 	help
 	  This option enables device driver support for the PWM channels
-	  on certain Atmel processors.  Pulse Width Modulation is used for
+	  on certain Atmel processors.	Pulse Width Modulation is used for
 	  purposes including software controlled power-efficient backlights
 	  on LCD displays, motor control, and waveform generation.
 
@@ -397,7 +397,69 @@ config APANIC_PLABEL
 	default "kpanic"
 	---help---
 	 If your platform uses a different flash partition label for storing
- 	 crashdumps, enter it here.
+	 crashdumps, enter it here.
+
+config PMIC8058_PWM
+	tristate "Qualcomm PM8058 PWM support"
+	depends on PMIC8058
+	default y
+	help
+	  This option enables device driver support for the PWM channels
+	  on Qualcomm PM8058 chip. Pulse Width Modulation is used for
+	  purposes including software controlled brightness of backlight,
+	  motor control, and waveform generation.
+
+config SENSORS_BMA150_SPI
+	tristate "BMA150 G-sensor Driver"
+	depends on MICROP_COMMON
+	default y
+	help
+	 BMA150 G-sensor Driver implemented by HTC.
+
+config SENSORS_AKM8976
+	tristate "AKM8976 Compass Driver"
+	depends on I2C
+	help
+	 AKM8976 Compass Driver implemented by HTC.
+
+config SENSORS_AKM8973
+	tristate "AKM8973 Compass Driver"
+	depends on I2C
+	help
+	 AKM8973 Compass Driver implemented by HTC.
+
+config SENSORS_AKM8975
+	tristate "AKM8973 Compass Driver"
+	depends on I2C
+	help
+	 AKM8975 Compass Driver implemented by HTC.
+
+config TPS65200
+	tristate "tps65200 Driver"
+	depends on I2C
+	help
+	 TPS65200 Switch charger implemented by HTC.
+	 This could enable battery driver to set
+	 Charging current 100mA~500mA or 500mA~1000mA
+	 by GPIO or Register
+
+config VP_A1026
+	tristate "A1026 Voice Processor Driver"
+	depends on I2C
+	help
+	  A1026 Voice Processor Driver implemented by HTC.
+
+config AMP_TPA2051D3
+	tristate "TI TPA2051D3 Speaker AMP Driver"
+	depends on I2C
+	help
+	 TI TPA2051D3 Speaker AMP Driver implemented by HTC.
+
+config INPUT_ISL29028
+	tristate "ISL29028 proximity and light sensor"
+	help
+	  Say Y here to enable the ISL29028 Short Distance Proximity
+	  Sensor with Ambient Light Sensor.
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

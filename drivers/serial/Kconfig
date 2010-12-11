@@ -24,7 +24,7 @@ config SERIAL_8250
 	  module will be called 8250.
 	  [WARNING: Do not compile this driver as a module if you are using
 	  non-standard serial ports, since the configuration information will
-	  be lost when the driver is unloaded.  This limitation may be lifted
+	  be lost when the driver is unloaded.	This limitation may be lifted
 	  in the future.]
 
 	  BTW1: If you have a mouseman serial mouse which is not recognized by
@@ -133,7 +133,7 @@ config SERIAL_8250_RUNTIME_UARTS
 	default "4"
 	help
 	  Set this to the maximum number of serial ports you want
-	  the kernel to register at boot time.  This can be overridden
+	  the kernel to register at boot time.	This can be overridden
 	  with the module parameter "nr_uarts", or boot-time parameter
 	  8250.nr_uarts
 
@@ -414,7 +414,7 @@ config SERIAL_KS8695
 	depends on ARCH_KS8695
 	select SERIAL_CORE
 	help
-	  This selects the Micrel Centaur KS8695 UART.  Say Y here.
+	  This selects the Micrel Centaur KS8695 UART.	Say Y here.
 
 config SERIAL_KS8695_CONSOLE
 	bool "Support for console on KS8695 (Centaur) serial port"
@@ -1113,7 +1113,7 @@ config SERIAL_PMACZILOG_TTYS
 	depends on SERIAL_PMACZILOG
 	help
 	  The pmac_zilog driver for the z85C30 chip on many powermacs
-	  historically used the device numbers for /dev/ttySn.  The
+	  historically used the device numbers for /dev/ttySn.	The
 	  8250 serial port driver also uses these numbers, which means
 	  the two drivers being unable to coexist; you could not use
 	  both z85C30 and 8250 type ports at the same time.
@@ -1197,7 +1197,7 @@ config SERIAL_SGI_L1_CONSOLE
 	help
 		If you have an SGI Altix and you would like to use the system
 		controller serial port as your console (you want this!),
-		say Y.  Otherwise, say N.
+		say Y.	Otherwise, say N.
 
 config SERIAL_MPC52xx
 	tristate "Freescale MPC52xx/MPC512x family PSC serial support"
@@ -1351,6 +1351,46 @@ config SERIAL_MSM_CONSOLE
 	depends on SERIAL_MSM=y
 	select SERIAL_CORE_CONSOLE
 
+config SERIAL_MSM_CLOCK_CONTROL
+	bool "Allow tty clients to make clock requests to msm uarts."
+	depends on SERIAL_MSM=y
+	default y
+	help
+	 Provides an interface for tty clients to request the msm uart clock
+	 to be turned on or off for power savings.
+
+config SERIAL_MSM_RX_WAKEUP
+	bool "Wakeup the msm uart clock on GPIO activity."
+	depends on SERIAL_MSM_CLOCK_CONTROL
+	default n
+	help
+	 Requires SERIAL_MSM_CLOCK_CONTROL. Wake up the uart while the uart
+	 clock is off, using a wakeup GPIO.
+
+config SERIAL_MSM_HS
+	tristate "MSM UART High Speed: Serial Driver"
+	depends on ARM && ARCH_MSM
+	select SERIAL_CORE
+	default n
+	help
+	  Select this module to enable MSM high speed UART driver.
+
+config SERIAL_MSM_HS_PURE_ANDROID
+	tristate "PURE ANDROID MSM UART High Speed: Serial Driver"
+	depends on ARM && ARCH_MSM
+	select SERIAL_CORE
+	default n
+	help
+	  Select this module to enable PURE ANDROID MSM high speed UART driver.
+
+config SERIAL_BCM_BT_LPM
+	tristate "Broadcom Bluetooth Low Power Mode"
+	depends on ARM && ARCH_MSM
+	select SERIAL_CORE
+	default n
+	help
+	  Select this module for Broadcom Bluetooth low power management.
+
 config SERIAL_NETX
 	tristate "NetX serial port support"
 	depends on ARM && ARCH_NETX
@@ -1359,8 +1399,8 @@ config SERIAL_NETX
 	  If you have a machine based on a Hilscher NetX SoC you
 	  can enable its onboard serial port by enabling this option.
 
-          To compile this driver as a module, choose M here: the
-          module will be called netx-serial.
+	  To compile this driver as a module, choose M here: the
+	  module will be called netx-serial.
 
 config SERIAL_NETX_CONSOLE
 	bool "Console on NetX serial port"
@@ -1499,8 +1539,8 @@ config SERIAL_BCM63XX
 	  If you have a bcm63xx CPU, you can enable its onboard
 	  serial port by enabling this options.
 
-          To compile this driver as a module, choose M here: the
-          module will be called bcm963xx_uart.
+	  To compile this driver as a module, choose M here: the
+	  module will be called bcm963xx_uart.
 
 config SERIAL_BCM63XX_CONSOLE
 	bool "Console on bcm63xx serial port"

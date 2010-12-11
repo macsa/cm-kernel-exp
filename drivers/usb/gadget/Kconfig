@@ -226,7 +226,7 @@ config USB_GADGET_PXA25X
 	select USB_OTG_UTILS
 	help
 	   Intel's PXA 25x series XScale ARM-5TE processors include
-	   an integrated full speed USB 1.1 device controller.  The
+	   an integrated full speed USB 1.1 device controller.	The
 	   controller in the IXP 4xx series is register-compatible.
 
 	   It has fifteen fixed-function endpoints, as well as endpoint
@@ -510,6 +510,24 @@ config USB_LANGWELL
 # LAST -- dummy/emulated controller
 #
 
+config USB_GADGET_MSM_72K
+	boolean "MSM 72K Device Controller"
+	depends on ARCH_MSM
+	select USB_GADGET_SELECTED
+	select USB_GADGET_DUALSPEED
+	help
+	   USB gadget driver for Qualcomm MSM 72K architecture.
+
+	   Say "y" to link the driver statically, or "m" to build a
+	   dynamically linked module called "msm72k" and force all
+	   gadget drivers to also be dynamically linked.
+
+config USB_MSM_72K
+	tristate
+	depends on USB_GADGET_MSM_72K
+	default USB_GADGET
+	select USB_GADGET_SELECTED
+
 config USB_GADGET_DUMMY_HCD
 	boolean "Dummy HCD (DEVELOPMENT)"
 	depends on USB=y || (USB=m && USB_GADGET=m)
@@ -583,7 +601,7 @@ config USB_ZERO
 	  Gadget Zero is a two-configuration device.  It either sinks and
 	  sources bulk data; or it loops back a configurable number of
 	  transfers.  It also implements control requests, for "chapter 9"
-	  conformance.  The driver needs only two bulk-capable endpoints, so
+	  conformance.	The driver needs only two bulk-capable endpoints, so
 	  it can work on top of most device-side usb controllers.  It's
 	  useful for testing, and is also a working example showing how
 	  USB "gadget drivers" can be written.
@@ -684,16 +702,16 @@ config USB_ETH_EEM
        depends on USB_ETH
        default n
        help
-         CDC EEM is a newer USB standard that is somewhat simpler than CDC ECM
-         and therefore can be supported by more hardware.  Technically ECM and
-         EEM are designed for different applications.  The ECM model extends
-         the network interface to the target (e.g. a USB cable modem), and the
-         EEM model is for mobile devices to communicate with hosts using
-         ethernet over USB.  For Linux gadgets, however, the interface with
-         the host is the same (a usbX device), so the differences are minimal.
+	 CDC EEM is a newer USB standard that is somewhat simpler than CDC ECM
+	 and therefore can be supported by more hardware.  Technically ECM and
+	 EEM are designed for different applications.  The ECM model extends
+	 the network interface to the target (e.g. a USB cable modem), and the
+	 EEM model is for mobile devices to communicate with hosts using
+	 ethernet over USB.  For Linux gadgets, however, the interface with
+	 the host is the same (a usbX device), so the differences are minimal.
 
-         If you say "y" here, the Ethernet gadget driver will use the EEM
-         protocol rather than ECM.  If unsure, say "n".
+	 If you say "y" here, the Ethernet gadget driver will use the EEM
+	 protocol rather than ECM.  If unsure, say "n".
 
 config USB_GADGETFS
 	tristate "Gadget Filesystem (EXPERIMENTAL)"
@@ -785,7 +803,7 @@ config USB_MASS_STORAGE
 	  which may be used with composite framework.
 
 	  Say "y" to link the driver statically, or "m" to build
-	  a dynamically linked module called "g_mass_storage".  If unsure,
+	  a dynamically linked module called "g_mass_storage".	If unsure,
 	  consider File-backed Storage Gadget.
 
 config USB_G_SERIAL
@@ -796,7 +814,7 @@ config USB_G_SERIAL
 	  to interoperate with MS-Windows hosts or with the Linux-USB
 	  "cdc-acm" driver.
 
-	  This driver also supports a CDC-OBEX option.  You will need a
+	  This driver also supports a CDC-OBEX option.	You will need a
 	  user space OBEX server talking to /dev/ttyGS*, since the kernel
 	  itself doesn't implement the OBEX protocol.
 
@@ -875,14 +893,14 @@ config USB_ANDROID_RNDIS
 	  Provides RNDIS ethernet function for android gadget driver.
 
 config USB_ANDROID_RNDIS_WCEIS
-        boolean "Use Windows Internet Sharing Class/SubClass/Protocol"
-        depends on USB_ANDROID_RNDIS
-        help
-         Causes the driver to look like a Windows-compatible Internet
-         Sharing device, so Windows auto-detects it.
+	boolean "Use Windows Internet Sharing Class/SubClass/Protocol"
+	depends on USB_ANDROID_RNDIS
+	help
+	 Causes the driver to look like a Windows-compatible Internet
+	 Sharing device, so Windows auto-detects it.
 
-         If you enable this option, the device is no longer CDC ethernet
-         compatible.
+	 If you enable this option, the device is no longer CDC ethernet
+	 compatible.
 
 config USB_CDC_COMPOSITE
 	tristate "CDC Composite Device (Ethernet and ACM)"
@@ -918,7 +936,7 @@ config USB_G_MULTI
 
 	  You will be asked to choose which of the two configurations is
 	  to be available in the gadget.  At least one configuration must
-	  be chosen to make the gadget usable.  Selecting more than one
+	  be chosen to make the gadget usable.	Selecting more than one
 	  configuration will prevent Windows from automatically detecting
 	  the gadget as a composite gadget, so an INF file will be needed to
 	  use the gadget.
@@ -975,5 +993,25 @@ config USB_G_WEBCAM
 	  dynamically linked module called "g_webcam".
 
 endchoice
+
+config USB_ACCESSORY_DETECT
+	boolean "USB ACCESSORY DETECT"
+	depends on USB_ANDROID
+	default n
+
+config USB_ACCESSORY_DETECT_BY_ADC
+	boolean "DETECT USB ACCESSORY BY PMIC ADC"
+	depends on USB_ANDROID && USB_ACCESSORY_DETECT
+	default n
+
+config DOCK_ACCESSORY_DETECT
+	boolean "DOCK ACCESSORY DETECT"
+	depends on USB_ANDROID
+	default n
+
+config USB_BYPASS_VBUS_NOTIFY
+	boolean "USB BYPASS VBUS NOTIFY"
+	depends on USB_ANDROID
+	default n
 
 endif # USB_GADGET

@@ -12,7 +12,7 @@ menuconfig RTC_CLASS
 	select RTC_LIB
 	help
 	  Generic RTC class support. If you say yes here, you will
- 	  be allowed to plug one or more RTCs to your system. You will
+	  be allowed to plug one or more RTCs to your system. You will
 	  probably want to enable one or more of the interfaces below.
 
 	  This driver can also be built as a module. If so, the module
@@ -645,6 +645,13 @@ config RTC_DRV_NUC900
 
 comment "on-CPU RTC drivers"
 
+config RTC_DRV_MSM7X00A
+	tristate "MSM7X00A"
+	depends on ARCH_MSM
+	default y
+	help
+	  RTC driver for Qualcomm MSM7K chipsets
+
 config RTC_DRV_DAVINCI
 	tristate "TI DaVinci RTC"
 	depends on ARCH_DAVINCI_DM365
@@ -706,7 +713,7 @@ config RTC_DRV_SH
 	  Say Y here to enable support for the on-chip RTC found in
 	  most SuperH processors.
 
- 	  To compile this driver as a module, choose M here: the
+	  To compile this driver as a module, choose M here: the
 	  module will be called rtc-sh.
 
 config RTC_DRV_VR41XX
@@ -830,11 +837,11 @@ config RTC_DRV_PXA
        tristate "PXA27x/PXA3xx"
        depends on ARCH_PXA
        help
-         If you say Y here you will get access to the real time clock
-         built into your PXA27x or PXA3xx CPU.
+	 If you say Y here you will get access to the real time clock
+	 built into your PXA27x or PXA3xx CPU.
 
-         This RTC driver uses PXA RTC registers available since pxa27x
-         series (RDxR, RYxR) instead of legacy RCNR, RTAR.
+	 This RTC driver uses PXA RTC registers available since pxa27x
+	 series (RDxR, RYxR) instead of legacy RCNR, RTAR.
 
 
 config RTC_DRV_SUN4V

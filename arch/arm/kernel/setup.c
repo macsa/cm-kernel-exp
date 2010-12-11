@@ -88,6 +88,12 @@ EXPORT_SYMBOL(system_serial_high);
 unsigned int elf_hwcap;
 EXPORT_SYMBOL(elf_hwcap);
 
+char microp_ver[4];
+EXPORT_SYMBOL(microp_ver);
+
+unsigned int als_kadc;
+EXPORT_SYMBOL(als_kadc);
+
 
 #ifdef MULTI_CPU
 struct processor processor;
@@ -494,7 +500,7 @@ request_standard_resources(struct meminfo *mi, struct machine_desc *mdesc)
 
 	if (mdesc->video_start) {
 		video_ram.start = mdesc->video_start;
-		video_ram.end   = mdesc->video_end;
+		video_ram.end	= mdesc->video_end;
 		request_resource(&iomem_resource, &video_ram);
 	}
 
@@ -551,8 +557,8 @@ struct screen_info screen_info = {
 
 static int __init parse_tag_videotext(const struct tag *tag)
 {
-	screen_info.orig_x            = tag->u.videotext.x;
-	screen_info.orig_y            = tag->u.videotext.y;
+	screen_info.orig_x	      = tag->u.videotext.x;
+	screen_info.orig_y	      = tag->u.videotext.y;
 	screen_info.orig_video_page   = tag->u.videotext.video_page;
 	screen_info.orig_video_mode   = tag->u.videotext.video_mode;
 	screen_info.orig_video_cols   = tag->u.videotext.video_cols;
@@ -592,6 +598,27 @@ static int __init parse_tag_revision(const struct tag *tag)
 }
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
+
+static int __init parse_tag_microp_version(const struct tag *tag)
+{
+	int i;
+
+	for (i = 0; i < 4; i++)
+		microp_ver[i] = tag->u.microp_version.ver[i];
+
+	return 0;
+}
+
+__tagtable(ATAG_MICROP_VERSION, parse_tag_microp_version);
+
+static int __init parse_tag_als_calibration(const struct tag *tag)
+{
+	als_kadc = tag->u.als_kadc.kadc;
+
+	return 0;
+}
+
+__tagtable(ATAG_ALS, parse_tag_als_calibration);
 
 #ifndef CONFIG_CMDLINE_FORCE
 static int __init parse_tag_cmdline(const struct tag *tag)
