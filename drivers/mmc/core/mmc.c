@@ -16,10 +16,12 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/mmc.h>
+#include <linux/kthread.h>
 
 #include "core.h"
 #include "bus.h"
 #include "mmc_ops.h"
+
 
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
@@ -114,18 +116,28 @@ static int mmc_decode_cid(struct mmc_card *card)
 static int mmc_decode_csd(struct mmc_card *card)
 {
 	struct mmc_csd *csd = &card->csd;
-	unsigned int e, m;
+	unsigned int e, m, csd_struct;
 	u32 *resp = card->raw_csd;
 
 	/*
 	 * We only understand CSD structure v1.1 and v1.2.
 	 * v1.2 has extra information in bits 15, 11 and 10.
-	 * We also support eMMC v4.4 & v4.41.
 	 */
-	csd->structure = UNSTUFF_BITS(resp, 126, 2);
-	if (csd->structure == 0) {
+	csd_struct = UNSTUFF_BITS(resp, 126, 2);
+#if defined(CONFIG_ARCH_MSM7X30)
+	/* for eMMC spec v4.4, csd_struct value will be 3		*/
+	/* for eMMC spec v4.1-v4.3 csd struct value will be 2	*/
+	/* currently we don't support csd_struct version No. 1.0	*/
+	if (csd_struct == 0) {
 		printk(KERN_ERR "%s: unrecognised CSD structure version %d\n",
-			mmc_hostname(card->host), csd->structure);
+			mmc_hostname(card->host), csd_struct);
+#else
+	/* For SanDisk iNAND, after comparing 1.3 with 1.2, I think	*/
+	/* 1.3 is compatible with 1.2.					*/
+	if (csd_struct != 1 && csd_struct != 2 && csd_struct != 3) {
+		printk(KERN_ERR "%s: unrecognised CSD structure version 1.%d\n",
+			mmc_hostname(card->host), csd_struct);
+#endif
 		return -EINVAL;
 	}
 
@@ -208,22 +220,11 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 		goto out;
 	}
 
-	/* Version is coded in the CSD_STRUCTURE byte in the EXT_CSD register */
-	if (card->csd.structure == 3) {
-		int ext_csd_struct = ext_csd[EXT_CSD_STRUCTURE];
-		if (ext_csd_struct > 2) {
-			printk(KERN_ERR "%s: unrecognised EXT_CSD structure "
-				"version %d\n", mmc_hostname(card->host),
-					ext_csd_struct);
-			err = -EINVAL;
-			goto out;
-		}
-	}
-
 	card->ext_csd.rev = ext_csd[EXT_CSD_REV];
 	if (card->ext_csd.rev > 5) {
-		printk(KERN_ERR "%s: unrecognised EXT_CSD revision %d\n",
-			mmc_hostname(card->host), card->ext_csd.rev);
+		printk(KERN_ERR "%s: unrecognised EXT_CSD structure "
+			"version %d\n", mmc_hostname(card->host),
+			card->ext_csd.rev);
 		err = -EINVAL;
 		goto out;
 	}
@@ -234,16 +235,23 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 			ext_csd[EXT_CSD_SEC_CNT + 1] << 8 |
 			ext_csd[EXT_CSD_SEC_CNT + 2] << 16 |
 			ext_csd[EXT_CSD_SEC_CNT + 3] << 24;
-		if (card->ext_csd.sectors) {
-			unsigned boot_sectors;
-			/* size is in 256K chunks, i.e. 512 sectors each */
-			boot_sectors = ext_csd[EXT_CSD_BOOT_SIZE_MULTI] * 512;
-			card->ext_csd.sectors -= boot_sectors;
-			mmc_card_set_blockaddr(card);
+		if (!mmc_card_blockaddr(card)) {
+			if (card->ext_csd.sectors > MMC_SECTOR_SIZE_2G) {
+				mmc_card_set_blockaddr(card);
+				printk(KERN_ERR "%s: OCR = byte mode"
+					" but size > 2GB\n", mmc_hostname(card->host));
+			}
 		}
 	}
 
-	switch (ext_csd[EXT_CSD_CARD_TYPE] & EXT_CSD_CARD_TYPE_MASK) {
+	switch (ext_csd[EXT_CSD_CARD_TYPE]) {
+#if defined(CONFIG_ARCH_MSM7X30)
+	/* for eMMC v4.4 there are two additional card type defined */
+	/* they are : 	High-Speed Dual Data Rate Multimedia Card @ 52Mhz - 1.8v or 3v IO */
+	/* High-Speed Dual Data Rate Multimedia Card @ 52Mhz - 1.2v IO 	*/
+	case EXT_CSD_CARD_TYPE_52 | EXT_CSD_CARD_TYPE_26 | EXT_CSD_CARD_TYPE_DDR_HV | EXT_CSD_CARD_TYPE_DDR_LV:
+	case EXT_CSD_CARD_TYPE_52 | EXT_CSD_CARD_TYPE_26 | EXT_CSD_CARD_TYPE_DDR_HV:
+#endif
 	case EXT_CSD_CARD_TYPE_52 | EXT_CSD_CARD_TYPE_26:
 		card->ext_csd.hs_max_dtr = 52000000;
 		break;
@@ -255,6 +263,7 @@ static int mmc_read_ext_csd(struct mmc_card *card)
 		printk(KERN_WARNING "%s: card is mmc v4 but doesn't "
 			"support any high-speed modes.\n",
 			mmc_hostname(card->host));
+		goto out;
 	}
 
 	if (card->ext_csd.rev >= 3) {
@@ -321,6 +330,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 {
 	struct mmc_card *card;
 	int err;
+	u32 rocr;
 	u32 cid[4];
 	unsigned int max_dtr;
 
@@ -336,7 +346,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	mmc_go_idle(host);
 
 	/* The extra bit indicates that we support high capacity */
-	err = mmc_send_op_cond(host, ocr | (1 << 30), NULL);
+	err =  mmc_send_op_cond(host, ocr | (1 <<  30), &rocr);
 	if (err)
 		goto err;
 
@@ -379,6 +389,8 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		card->type = MMC_TYPE_MMC;
 		card->rca = 1;
 		memcpy(card->raw_cid, cid, sizeof(card->raw_cid));
+		if ((rocr &  MMC_ACCESS_MODE_MASK)  == MMC_ACCESS_MODE_SECTOR)
+			mmc_card_set_blockaddr(card);
 	}
 
 	/*
@@ -516,6 +528,39 @@ static void mmc_remove(struct mmc_host *host)
 	host->card = NULL;
 }
 
+
+#if 0
+/*
+ * When "deferred resume" fails, run another thread to stop mmcqd.
+ */
+static int mmc_removal_thread(void *d)
+{
+	struct mmc_host *host = d;
+
+	mmc_remove(host);
+
+	mmc_claim_host(host);
+	mmc_detach_bus(host);
+	mmc_release_host(host);
+
+	return 0;
+}
+
+static void mmc_err_with_deferred_resume(struct mmc_host *host)
+{
+	if (mmc_bus_needs_resume(host)) {
+		host->bus_resume_flags |= MMC_BUSRESUME_FAILS_RESUME;
+		kthread_run(mmc_removal_thread, host, "emmcrd");
+	} else {
+		mmc_remove(host);
+
+		mmc_claim_host(host);
+		mmc_detach_bus(host);
+		mmc_release_host(host);
+	}
+}
+#endif
+
 /*
  * Card detection callback from host.
  */
@@ -578,6 +623,10 @@ static int mmc_resume(struct mmc_host *host)
 	err = mmc_init_card(host, host->ocr, host->card);
 	mmc_release_host(host);
 
+#if 0
+	if (err)
+		mmc_err_with_deferred_resume(host);
+#endif
 	return err;
 }
 
@@ -619,6 +668,25 @@ static int mmc_awake(struct mmc_host *host)
 	return err;
 }
 
+#ifdef CONFIG_MMC_UNSAFE_RESUME
+
+static const struct mmc_bus_ops mmc_ops = {
+	.awake = mmc_awake,
+	.sleep = mmc_sleep,
+	.remove = mmc_remove,
+	.detect = mmc_detect,
+	.suspend = mmc_suspend,
+	.resume = mmc_resume,
+	.power_restore = mmc_power_restore,
+};
+
+static void mmc_attach_bus_ops(struct mmc_host *host)
+{
+	mmc_attach_bus(host, &mmc_ops);
+}
+
+#else
+
 static const struct mmc_bus_ops mmc_ops = {
 	.awake = mmc_awake,
 	.sleep = mmc_sleep,
@@ -643,12 +711,14 @@ static void mmc_attach_bus_ops(struct mmc_host *host)
 {
 	const struct mmc_bus_ops *bus_ops;
 
-	if (host->caps & MMC_CAP_NONREMOVABLE || !mmc_assume_removable)
+	if (host->caps & MMC_CAP_NONREMOVABLE)
 		bus_ops = &mmc_ops_unsafe;
 	else
 		bus_ops = &mmc_ops;
 	mmc_attach_bus(host, bus_ops);
 }
+
+#endif
 
 /*
  * Starting point for MMC card init.

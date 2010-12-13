@@ -17,11 +17,15 @@
 #include <linux/mmc/card.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
+#include <linux/kthread.h>
 
 #include "core.h"
 #include "bus.h"
 #include "mmc_ops.h"
 #include "sd_ops.h"
+
+extern void mmc_power_up(struct mmc_host *host);
+extern void mmc_power_off(struct mmc_host *host);
 
 static const unsigned int tran_exp[] = {
 	10000,		100000,		1000000,	10000000,
@@ -541,7 +545,6 @@ err:
 
 	return err;
 }
-
 /*
  * Host is being removed. Free up the current card.
  */
@@ -553,6 +556,40 @@ static void mmc_sd_remove(struct mmc_host *host)
 	mmc_remove_card(host->card);
 	host->card = NULL;
 }
+
+#if 0
+#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
+/*
+ * When "deferred resume" fails, run another thread to stop mmcqd.
+ */
+static int mmc_sd_removal_thread(void *d)
+{
+	struct mmc_host *host = d;
+
+	mmc_sd_remove(host);
+
+	mmc_claim_host(host);
+	mmc_detach_bus(host);
+	mmc_release_host(host);
+
+	return 0;
+}
+
+static void mmc_sd_err_with_deferred_resume(struct mmc_host *host)
+{
+	if (mmc_bus_needs_resume(host)) {
+		host->bus_resume_flags |= MMC_BUSRESUME_FAILS_RESUME;
+		kthread_run(mmc_sd_removal_thread, host, "mmcrd");
+	} else {
+		mmc_sd_remove(host);
+
+		mmc_claim_host(host);
+		mmc_detach_bus(host);
+		mmc_release_host(host);
+	}
+}
+#endif
+#endif
 
 /*
  * Card detection callback from host.
@@ -566,7 +603,7 @@ static void mmc_sd_detect(struct mmc_host *host)
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
-       
+
 	mmc_claim_host(host);
 
 	/*
@@ -642,7 +679,9 @@ static int mmc_sd_resume(struct mmc_host *host)
 		if (err) {
 			printk(KERN_ERR "%s: Re-init card rc = %d (retries = %d)\n",
 			       mmc_hostname(host), err, retries);
+			mmc_power_off(host);
 			mdelay(5);
+			mmc_power_up(host);
 			retries--;
 			continue;
 		}
@@ -652,6 +691,12 @@ static int mmc_sd_resume(struct mmc_host *host)
 	err = mmc_sd_init_card(host, host->ocr, host->card);
 #endif
 	mmc_release_host(host);
+#if 0
+#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
+	if (err)
+		mmc_sd_err_with_deferred_resume(host);
+#endif
+#endif
 
 	return err;
 }
@@ -663,6 +708,23 @@ static void mmc_sd_power_restore(struct mmc_host *host)
 	mmc_sd_init_card(host, host->ocr, host->card);
 	mmc_release_host(host);
 }
+
+#ifdef CONFIG_MMC_UNSAFE_RESUME
+
+static const struct mmc_bus_ops mmc_sd_ops = {
+	.remove = mmc_sd_remove,
+	.detect = mmc_sd_detect,
+	.suspend = mmc_sd_suspend,
+	.resume = mmc_sd_resume,
+	.power_restore = mmc_sd_power_restore,
+};
+
+static void mmc_sd_attach_bus_ops(struct mmc_host *host)
+{
+	mmc_attach_bus(host, &mmc_sd_ops);
+}
+
+#else
 
 static const struct mmc_bus_ops mmc_sd_ops = {
 	.remove = mmc_sd_remove,
@@ -684,12 +746,14 @@ static void mmc_sd_attach_bus_ops(struct mmc_host *host)
 {
 	const struct mmc_bus_ops *bus_ops;
 
-	if (host->caps & MMC_CAP_NONREMOVABLE || !mmc_assume_removable)
+	if (host->caps & MMC_CAP_NONREMOVABLE)
 		bus_ops = &mmc_sd_ops_unsafe;
 	else
 		bus_ops = &mmc_sd_ops;
 	mmc_attach_bus(host, bus_ops);
 }
+
+#endif
 
 /*
  * Starting point for SD card init.

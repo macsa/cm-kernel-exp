@@ -1784,7 +1784,7 @@ msmsdcc_suspend(struct platform_device *dev, pm_message_t state)
 		struct msmsdcc_host *host = mmc_priv(mmc);
 
 		if (mmc->card && (mmc->card->type != MMC_TYPE_SDIO))
-			rc = mmc_suspend_host(mmc);
+			rc = mmc_suspend_host(mmc, state);
 
 		if (!rc)
 			msmsdcc_writel(host, 0, MMCIMASK0);
