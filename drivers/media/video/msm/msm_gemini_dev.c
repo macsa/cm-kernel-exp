@@ -79,6 +79,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include <media/msm_gemini.h>
 #include "msm_gemini_sync.h"

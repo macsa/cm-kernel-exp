@@ -65,6 +65,8 @@
 #include <linux/delay.h>
 #include <mach/gpio.h>
 #include <asm/atomic.h>
+#include <linux/slab.h>
+
 atomic_t irq_cnt;
 
 #define CHECKED_COPY_FROM_USER(in) {					\
@@ -2680,11 +2682,6 @@ static int vfe31_init(struct msm_vfe_callback *presp,
 		pr_err("vfe31_resource_init error\n");
 		return rc;
 	}
-
-		/* Set required axi bus frequency */
-	rc = request_axi_qos(MSM_AXI_QOS_PREVIEW);
-	if (rc < 0)
-		CDBG("request of axi qos failed\n");
 
 	/* Bring up all the required GPIOs and Clocks */
 	rc = msm_camio_enable(dev);

@@ -40,6 +40,7 @@
 DEFINE_MUTEX(hlist_mut);
 #include <asm/cacheflush.h>
 #include <linux/rtc.h>
+#include <linux/slab.h>
 
 DEFINE_MUTEX(pp_prev_lock);
 DEFINE_MUTEX(pp_snap_lock);

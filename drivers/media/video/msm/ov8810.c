@@ -62,6 +62,7 @@
 #include <linux/miscdevice.h>
 #include <linux/earlysuspend.h>
 #include <linux/wakelock.h>
+#include <linux/slab.h>
 #include <media/msm_camera.h>
 #include <mach/gpio.h>
 #include <mach/camera.h>
