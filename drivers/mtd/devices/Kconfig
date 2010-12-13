@@ -41,13 +41,21 @@ config MTD_MS02NV
 	help
 	  This is an MTD driver for the DEC's MS02-NV (54-20948-01) battery
 	  backed-up NVRAM module.  The module was originally meant as an NFS
-	  accelerator.  Say Y here if you have a DECstation 5000/2x0 or a
+	  accelerator.	Say Y here if you have a DECstation 5000/2x0 or a
 	  DECsystem 5900 equipped with such a module.
 
 	  If you want to compile this driver as a module ( = code which can be
 	  inserted in and removed from the running kernel whenever you want),
 	  say M here and read <file:Documentation/kbuild/modules.txt>.
 	  The module will be called ms02-nv.
+
+config MTD_MSM_NAND
+	tristate "MSM NAND Device Support"
+	depends on MTD && ARCH_MSM
+	select MTD_NAND_IDS
+	default y
+	help
+	  Support for some NAND chips connected to the MSM NAND controller.
 
 config MTD_DATAFLASH
 	tristate "Support for AT45xxx DataFlash"
@@ -84,7 +92,7 @@ config MTD_M25P80
 	help
 	  This enables access to most modern SPI flash chips, used for
 	  program and data storage.   Series supported include Atmel AT26DF,
-	  Spansion S25SL, SST 25VF, ST M25P, and Winbond W25X.  Other chips
+	  Spansion S25SL, SST 25VF, ST M25P, and Winbond W25X.	Other chips
 	  are supported as well.  See the driver source for the current list,
 	  or to add other chips.
 
@@ -195,7 +203,7 @@ config MTD_DOC2000
 	select MTD_NAND_IDS
 	---help---
 	  This provides an MTD device driver for the M-Systems DiskOnChip
-	  2000 and Millennium devices.  Originally designed for the DiskOnChip
+	  2000 and Millennium devices.	Originally designed for the DiskOnChip
 	  2000, it also now includes support for the DiskOnChip Millennium.
 	  If you have problems with this driver and the DiskOnChip Millennium,
 	  you may wish to try the alternative Millennium driver below. To use
