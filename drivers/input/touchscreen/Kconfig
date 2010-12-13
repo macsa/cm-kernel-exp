@@ -11,6 +11,18 @@ menuconfig INPUT_TOUCHSCREEN
 
 if INPUT_TOUCHSCREEN
 
+config TOUCHSCREEN_ATMEL
+	tristate "Atmel i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Atmel over I2C based touchscreens.
+
+config TOUCHSCREEN_NTRIG
+	tristate "N-trig spi touchscreen"
+	depends on SPI_TOUCHSCREEN_NTRIG
+	help
+	  This is support for N-trig over spi based touchscreens
+
 config TOUCHSCREEN_88PM860X
 	tristate "Marvell 88PM860x touchscreen"
 	depends on MFD_88PM860X
@@ -99,6 +111,14 @@ config TOUCHSCREEN_BITSY
 	  To compile this driver as a module, choose M here: the
 	  module will be called h3600_ts_input.
 
+config TOUCHSCREEN_CYPRESS_TMG
+	tristate "Support for Cypress TMC i2c touchscreen"
+	depends on I2C
+	help
+	  Say Y here to enable support for cy8ctmg touchcreens.
+
+	  If unsure, say N
+
 config TOUCHSCREEN_DA9034
 	tristate "Touchscreen support for Dialog Semiconductor DA9034"
 	depends on PMIC_DA903X
@@ -177,6 +197,16 @@ config TOUCHSCREEN_GUNZE
 	  To compile this driver as a module, choose M here: the
 	  module will be called gunze.
 
+config TOUCHSCREEN_ELAN_I2C_8232
+	tristate "Elan 8232 I2C touchscreen"
+	depends on I2C
+
+config TOUCHSCREEN_ELAN_KTF2K
+	tristate "Elan KTF2000 I2C touchscreen"
+	depends on I2C
+	help
+	  This enables support for Elan KTF2000 over I2C based touchscreens.
+
 config TOUCHSCREEN_ELO
 	tristate "Elo serial touchscreens"
 	select SERIO
@@ -253,7 +283,7 @@ config TOUCHSCREEN_HP600
 	depends on SH_HP6XX && SH_ADC
 	help
 	  Say Y here if you have a HP Jornada 620/660/680/690 and want to
-          support the built-in touchscreen.
+	  support the built-in touchscreen.
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called hp680_ts_input.
@@ -292,6 +322,15 @@ config TOUCHSCREEN_PENMOUNT
 	  To compile this driver as a module, choose M here: the
 	  module will be called penmount.
 
+config TOUCHSCREEN_MSM
+	bool "Qualcomm MSM touchscreen controller"
+	depends on ARCH_MSM
+	default n
+	help
+	  Say Y here if you have a 4-wire resistive touchscreen panel
+	  connected to the TSSC touchscreen controller on a
+	  Qualcomm MSM/QSD based SoC.
+
 config TOUCHSCREEN_MIGOR
 	tristate "Renesas MIGO-R touchscreen"
 	depends on SH_MIGOR && I2C
@@ -308,6 +347,41 @@ config TOUCHSCREEN_SYNAPTICS_I2C_RMI
 	depends on I2C
 	help
 	  This enables support for Synaptics RMI over I2C based touchscreens.
+
+config TOUCHSCREEN_COMPATIBLE_REPORT
+	bool "Touchscreen compatible report"
+	depends on I2C
+	default n
+	help
+	  This enables support for old report style in touchscreen driver
+
+config TOUCHSCREEN_CONCATENATE_REPORT
+	bool "Touchscreen concatenate report"
+	depends on I2C
+	default n
+	help
+	  This enables support for concatenate report style in touchscreen driver
+	  This support could reduce the number of reports in touchscreen driver
+
+config TOUCHSCREEN_DUPLICATED_FILTER
+	bool "Touchscreen duplicated report filter"
+	depends on TOUCHSCREEN_SYNAPTICS_I2C_RMI
+	default n
+	help
+	  This enables filter for duplicated report in touchscreen driver
+	  This support will discard small movement report in touchscreen driver
+
+config TOUCHSCREEN_SYNAPTICS_T1021
+	tristate "Synaptics T1021 i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Synaptics RMI4 over I2C based touchscreens.
+
+config TOUCHSCREEN_SYNAPTICS_3K
+	tristate "Synaptics 3k serious i2c touchscreen"
+	depends on I2C
+	help
+	  This enables support for Synaptics RMI4 over I2C based touchscreens.
 
 config TOUCHSCREEN_TOUCHRIGHT
 	tristate "Touchright serial touchscreen"
@@ -338,7 +412,7 @@ config TOUCHSCREEN_ATMEL_TSADCC
 	depends on ARCH_AT91SAM9RL || ARCH_AT91SAM9G45
 	help
 	  Say Y here if you have a 4-wire touchscreen connected to the
-          ADC Controller on your Atmel SoC (such as the AT91SAM9RL).
+	  ADC Controller on your Atmel SoC (such as the AT91SAM9RL).
 
 	  If unsure, say N.
 
@@ -353,7 +427,7 @@ config TOUCHSCREEN_UCB1400
 	  This enables support for the Philips UCB1400 touchscreen interface.
 	  The UCB1400 is an AC97 audio codec.  The touchscreen interface
 	  will be initialized only after the ALSA subsystem has been
-	  brought up and the UCB1400 detected.  You therefore have to
+	  brought up and the UCB1400 detected.	You therefore have to
 	  configure ALSA support as well (either built-in or modular,
 	  independently of whether this driver is itself built-in or
 	  modular) for this driver to work.
