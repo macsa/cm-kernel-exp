@@ -24,6 +24,7 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/synaptics_i2c_rmi.h>
+#include <linux/slab.h>
 
 struct synaptics_ts_data {
 	uint16_t addr;

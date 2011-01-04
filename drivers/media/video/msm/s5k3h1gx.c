@@ -68,6 +68,7 @@
 #include <mach/vreg.h>
 #include <asm/mach-types.h>
 #include "s5k3h1gx.h"
+#include <linux/slab.h>
 
 /* CAMIF output resolutions */
 /* 816x612, 24MHz MCLK 96MHz PCLK */

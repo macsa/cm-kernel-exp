@@ -26,6 +26,7 @@
 #include <linux/elan_ktf2k.h>
 #include <linux/device.h>
 #include <linux/jiffies.h>
+#include <linux/slab.h>
 
 #define ELAN_TS_FUZZ 		0
 #define ELAN_TS_FLAT 		0

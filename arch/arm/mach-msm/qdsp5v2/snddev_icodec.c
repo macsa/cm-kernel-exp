@@ -74,6 +74,7 @@
 
 #include <mach/qdsp5v2/marimba_profile.h>
 #include <asm/mach-types.h>
+#include <linux/slab.h>
 
 #define SNDDEV_ICODEC_PCM_SZ 32 /* 16 bit / sample stereo mode */
 #define SNDDEV_ICODEC_MUL_FACTOR 3 /* Multi by 8 Shift by 3  */
@@ -328,13 +329,13 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 
 	if (!support_aic3254) {
 		/* Configure ADIE */
-		trc = adie_codec_open(icodec->data->profile, &icodec->adie_path);
+		trc = marimba_adie_codec_open(icodec->data->profile, &icodec->adie_path);
 		if (IS_ERR_VALUE(trc))
 			goto error_adie;
 		/* OSR default to 256, can be changed for power optimization
 		 * If OSR is to be changed, need clock API for setting the divider
 		 */
-		adie_codec_setpath(icodec->adie_path, icodec->sample_rate, 256);
+		marimba_adie_codec_setpath(icodec->adie_path, icodec->sample_rate, 256);
 	}
 
 	/* Start AFE */
@@ -347,13 +348,13 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 	lpa_cmd_enable_codec(drv->lpa, 1);
 	if (!support_aic3254) {
 		/* Enable ADIE */
-		if (adie_codec_proceed_stage(icodec->adie_path,
+		if (marimba_adie_codec_proceed_stage(icodec->adie_path,
 					ADIE_CODEC_DIGITAL_READY) ) {
 			icodec->adie_path->profile = NULL;
 			goto error_adie;
 		}
 
-		if (adie_codec_proceed_stage(icodec->adie_path,
+		if (marimba_adie_codec_proceed_stage(icodec->adie_path,
 					ADIE_CODEC_DIGITAL_ANALOG_READY) ) {
 			icodec->adie_path->profile = NULL;
 			goto error_adie;
@@ -371,7 +372,7 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 
 error_afe:
 	if (!support_aic3254) {
-		adie_codec_close(icodec->adie_path);
+		marimba_adie_codec_close(icodec->adie_path);
 		icodec->adie_path = NULL;
 	}
 error_adie:
@@ -416,17 +417,17 @@ static int snddev_icodec_open_tx(struct snddev_icodec_state *icodec)
 	mi2s_set_codec_input_path((icodec->data->channel_mode == 2 ?
 	MI2S_CHAN_STEREO : MI2S_CHAN_MONO_RAW), WT_16_BIT);
 	/* Configure ADIE */
-	trc = adie_codec_open(icodec->data->profile, &icodec->adie_path);
+	trc = marimba_adie_codec_open(icodec->data->profile, &icodec->adie_path);
 	if (IS_ERR_VALUE(trc))
 		goto error_adie;
 	/* Enable ADIE */
-	adie_codec_setpath(icodec->adie_path, icodec->sample_rate, 256);
-	if (adie_codec_proceed_stage(icodec->adie_path,
+	marimba_adie_codec_setpath(icodec->adie_path, icodec->sample_rate, 256);
+	if (marimba_adie_codec_proceed_stage(icodec->adie_path,
 			ADIE_CODEC_DIGITAL_READY)) {
 		icodec->adie_path->profile = NULL;
 		goto error_adie;
 	}
-	if (adie_codec_proceed_stage(icodec->adie_path,
+	if (marimba_adie_codec_proceed_stage(icodec->adie_path,
 			ADIE_CODEC_DIGITAL_ANALOG_READY) ) {
 		icodec->adie_path->profile = NULL;
 		goto error_adie;
@@ -447,7 +448,7 @@ static int snddev_icodec_open_tx(struct snddev_icodec_state *icodec)
 	return 0;
 
 error_afe:
-	adie_codec_close(icodec->adie_path);
+	marimba_adie_codec_close(icodec->adie_path);
 	icodec->adie_path = NULL;
 error_adie:
 	clk_disable(drv->tx_sclk);
@@ -475,9 +476,9 @@ static int snddev_icodec_close_rx(struct snddev_icodec_state *icodec)
 
 	if (!support_aic3254) {
 		/* Disable ADIE */
-		adie_codec_proceed_stage(icodec->adie_path,
+		marimba_adie_codec_proceed_stage(icodec->adie_path,
 						ADIE_CODEC_DIGITAL_OFF);
-		adie_codec_close(icodec->adie_path);
+		marimba_adie_codec_close(icodec->adie_path);
 		icodec->adie_path = NULL;
 	}
 
@@ -512,8 +513,8 @@ static int snddev_icodec_close_tx(struct snddev_icodec_state *icodec)
 	afe_disable(AFE_HW_PATH_CODEC_TX);
 
 	/* Disable ADIE */
-	adie_codec_proceed_stage(icodec->adie_path, ADIE_CODEC_DIGITAL_OFF);
-	adie_codec_close(icodec->adie_path);
+	marimba_adie_codec_proceed_stage(icodec->adie_path, ADIE_CODEC_DIGITAL_OFF);
+	marimba_adie_codec_close(icodec->adie_path);
 	icodec->adie_path = NULL;
 
 	/* Disable MI2S TX master block */
@@ -550,7 +551,7 @@ static int snddev_icodec_set_device_volume_impl(
 
 	if (icodec->data->dev_vol_type & SNDDEV_DEV_VOL_DIGITAL) {
 
-		rc = adie_codec_set_device_digital_volume(icodec->adie_path,
+		rc = marimba_adie_codec_set_device_digital_volume(icodec->adie_path,
 				icodec->data->channel_mode, volume);
 		if (rc < 0) {
 			pr_err("%s: unable to set_device_digital_volume for"
@@ -560,7 +561,7 @@ static int snddev_icodec_set_device_volume_impl(
 		}
 
 	} else if (icodec->data->dev_vol_type & SNDDEV_DEV_VOL_ANALOG) {
-		rc = adie_codec_set_device_analog_volume(icodec->adie_path,
+		rc = marimba_adie_codec_set_device_analog_volume(icodec->adie_path,
 				icodec->data->channel_mode, volume);
 		if (rc < 0) {
 			pr_err("%s: unable to set_device_analog_volume for"
@@ -708,7 +709,7 @@ static int snddev_icodec_set_freq(struct msm_snddev_info *dev_info, u32 rate)
 	}
 
 	icodec = dev_info->private_data;
-	if (adie_codec_freq_supported(icodec->data->profile, rate) != 0) {
+	if (marimba_adie_codec_freq_supported(icodec->data->profile, rate) != 0) {
 		rc = -EINVAL;
 		goto error;
 	} else {
@@ -753,7 +754,7 @@ static int snddev_icodec_enable_sidetone(struct msm_snddev_info *dev_info,
 			mutex_unlock(&drv->rx_lock);
 			goto error;
 		}
-		rc = adie_codec_enable_sidetone(icodec->adie_path, enable);
+		rc = marimba_adie_codec_enable_sidetone(icodec->adie_path, enable);
 		mutex_unlock(&drv->rx_lock);
 	} else {
 		rc = -EINVAL;
@@ -913,9 +914,9 @@ static void debugfs_adie_loopback(u32 loop)
 
 		pr_info("%s: configure ADIE RX path\n", __func__);
 		/* Configure ADIE */
-		adie_codec_open(&debug_rx_profile, &debugfs_rx_adie);
-		adie_codec_setpath(debugfs_rx_adie, 8000, 256);
-		adie_codec_proceed_stage(debugfs_rx_adie,
+		marimba_adie_codec_open(&debug_rx_profile, &debugfs_rx_adie);
+		marimba_adie_codec_setpath(debugfs_rx_adie, 8000, 256);
+		marimba_adie_codec_proceed_stage(debugfs_rx_adie,
 		ADIE_CODEC_DIGITAL_ANALOG_READY);
 
 		pr_info("%s: Enable Handset Mic bias\n", __func__);
@@ -929,18 +930,18 @@ static void debugfs_adie_loopback(u32 loop)
 
 		pr_info("%s: configure ADIE TX path\n", __func__);
 		/* Configure ADIE */
-		adie_codec_open(&debug_tx_lb_profile, &debugfs_tx_adie);
-		adie_codec_setpath(debugfs_tx_adie, 8000, 256);
-		adie_codec_proceed_stage(debugfs_tx_adie,
+		marimba_adie_codec_open(&debug_tx_lb_profile, &debugfs_tx_adie);
+		marimba_adie_codec_setpath(debugfs_tx_adie, 8000, 256);
+		marimba_adie_codec_proceed_stage(debugfs_tx_adie,
 		ADIE_CODEC_DIGITAL_ANALOG_READY);
 	} else {
 		/* Disable ADIE */
-		adie_codec_proceed_stage(debugfs_rx_adie,
+		marimba_adie_codec_proceed_stage(debugfs_rx_adie,
 		ADIE_CODEC_DIGITAL_OFF);
-		adie_codec_close(debugfs_rx_adie);
-		adie_codec_proceed_stage(debugfs_tx_adie,
+		marimba_adie_codec_close(debugfs_rx_adie);
+		marimba_adie_codec_proceed_stage(debugfs_tx_adie,
 		ADIE_CODEC_DIGITAL_OFF);
-		adie_codec_close(debugfs_tx_adie);
+		marimba_adie_codec_close(debugfs_tx_adie);
 
 		pmic_hsed_enable(PM_HSED_CONTROLLER_0, PM_HSED_ENABLE_OFF);
 
@@ -981,8 +982,8 @@ static void debugfs_afe_loopback(u32 loop)
 		mi2s_set_codec_output_path(0, WT_16_BIT);
 		pr_info("%s: configure ADIE RX path\n", __func__);
 		/* Configure ADIE */
-		adie_codec_open(&debug_rx_profile, &debugfs_rx_adie);
-		adie_codec_setpath(debugfs_rx_adie, 8000, 256);
+		marimba_adie_codec_open(&debug_rx_profile, &debugfs_rx_adie);
+		marimba_adie_codec_setpath(debugfs_rx_adie, 8000, 256);
 		afe_config.sample_rate = 8;
 		afe_config.channel_mode = 1;
 		afe_config.volume = AFE_VOLUME_UNITY;
@@ -990,7 +991,7 @@ static void debugfs_afe_loopback(u32 loop)
 		trc = afe_enable(AFE_HW_PATH_CODEC_RX, &afe_config);
 		if (IS_ERR_VALUE(trc))
 			pr_err("%s: fail to enable afe rx\n", __func__);
-		adie_codec_proceed_stage(debugfs_rx_adie,
+		marimba_adie_codec_proceed_stage(debugfs_rx_adie,
 		ADIE_CODEC_DIGITAL_ANALOG_READY);
 
 		pr_info("%s: Enable Handset Mic bias\n", __func__);
@@ -1005,9 +1006,9 @@ static void debugfs_afe_loopback(u32 loop)
 		mi2s_set_codec_input_path(0, WT_16_BIT);
 		pr_info("%s: configure ADIE TX path\n", __func__);
 		/* Configure ADIE */
-		adie_codec_open(&debug_tx_profile, &debugfs_tx_adie);
-		adie_codec_setpath(debugfs_tx_adie, 8000, 256);
-		adie_codec_proceed_stage(debugfs_tx_adie,
+		marimba_adie_codec_open(&debug_tx_profile, &debugfs_tx_adie);
+		marimba_adie_codec_setpath(debugfs_tx_adie, 8000, 256);
+		marimba_adie_codec_proceed_stage(debugfs_tx_adie,
 		ADIE_CODEC_DIGITAL_ANALOG_READY);
 		/* Start AFE */
 		afe_config.sample_rate = 0x8;
@@ -1018,12 +1019,12 @@ static void debugfs_afe_loopback(u32 loop)
 			pr_err("%s: failed to enable AFE TX\n", __func__);
 	} else {
 		/* Disable ADIE */
-		adie_codec_proceed_stage(debugfs_rx_adie,
+		marimba_adie_codec_proceed_stage(debugfs_rx_adie,
 		ADIE_CODEC_DIGITAL_OFF);
-		adie_codec_close(debugfs_rx_adie);
-		adie_codec_proceed_stage(debugfs_tx_adie,
+		marimba_adie_codec_close(debugfs_rx_adie);
+		marimba_adie_codec_proceed_stage(debugfs_tx_adie,
 		ADIE_CODEC_DIGITAL_OFF);
-		adie_codec_close(debugfs_tx_adie);
+		marimba_adie_codec_close(debugfs_tx_adie);
 
 		pmic_hsed_enable(PM_HSED_CONTROLLER_0, PM_HSED_ENABLE_OFF);
 
