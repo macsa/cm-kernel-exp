@@ -22,6 +22,10 @@
 #include <linux/slab.h>
 #include <linux/wakelock.h>
 
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+#include <linux/curcial_oj.h>
+#endif
+
 enum {
 	DEBOUNCE_UNSTABLE     = BIT(0),	/* Got irq, while debouncing */
 	DEBOUNCE_PRESSED      = BIT(1),
@@ -80,7 +84,7 @@ static enum hrtimer_restart gpio_event_input_timer_func(struct hrtimer *timer)
 		if (key_state->debounce & DEBOUNCE_UNSTABLE) {
 			debounce = key_state->debounce = DEBOUNCE_UNKNOWN;
 			enable_irq(gpio_to_irq(key_entry->gpio));
-			pr_info("gpio_keys_scan_keys: key %x-%x, %d "
+			pr_info("gpio_keys_scan_keys: key %d-%d, %d "
 				"(%d) continue debounce\n",
 				ds->info->type, key_entry->code,
 				i, key_entry->gpio);
@@ -92,8 +96,8 @@ static enum hrtimer_restart gpio_event_input_timer_func(struct hrtimer *timer)
 				ds->debounce_count++;
 				key_state->debounce = DEBOUNCE_UNKNOWN;
 				if (gpio_flags & GPIOEDF_PRINT_KEY_DEBOUNCE)
-					pr_info("gpio_keys_scan_keys: key %x-"
-						"%x, %d (%d) start debounce\n",
+					pr_info("gpio_keys_scan_keys: key %d-"
+						"%d, %d (%d) start debounce\n",
 						ds->info->type, key_entry->code,
 						i, key_entry->gpio);
 			}
@@ -101,7 +105,7 @@ static enum hrtimer_restart gpio_event_input_timer_func(struct hrtimer *timer)
 		}
 		if (pressed && (debounce & DEBOUNCE_NOTPRESSED)) {
 			if (gpio_flags & GPIOEDF_PRINT_KEY_DEBOUNCE)
-				pr_info("gpio_keys_scan_keys: key %x-%x, %d "
+				pr_info("gpio_keys_scan_keys: key %d-%d, %d "
 					"(%d) debounce pressed 1\n",
 					ds->info->type, key_entry->code,
 					i, key_entry->gpio);
@@ -110,7 +114,7 @@ static enum hrtimer_restart gpio_event_input_timer_func(struct hrtimer *timer)
 		}
 		if (!pressed && (debounce & DEBOUNCE_PRESSED)) {
 			if (gpio_flags & GPIOEDF_PRINT_KEY_DEBOUNCE)
-				pr_info("gpio_keys_scan_keys: key %x-%x, %d "
+				pr_info("gpio_keys_scan_keys: key %d-%d, %d "
 					"(%d) debounce pressed 0\n",
 					ds->info->type, key_entry->code,
 					i, key_entry->gpio);
@@ -124,11 +128,26 @@ static enum hrtimer_restart gpio_event_input_timer_func(struct hrtimer *timer)
 		else
 			key_state->debounce |= DEBOUNCE_POLL;
 		if (gpio_flags & GPIOEDF_PRINT_KEYS)
-			pr_info("gpio_keys_scan_keys: key %x-%x, %d (%d) "
+			pr_info("gpio_keys_scan_keys: key %d-%d, %d (%d) "
 				"changed to %d\n", ds->info->type,
 				key_entry->code, i, key_entry->gpio, pressed);
-		input_event(ds->input_devs->dev[key_entry->dev], ds->info->type,
-			    key_entry->code, pressed);
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+		if (key_entry->code == BTN_MOUSE) {
+			pr_info("gpio_keys_scan_keys: OJ action key %d-%d, %d (%d) "
+				"changed to %d\n", ds->info->type,
+				key_entry->code, i, key_entry->gpio, pressed);
+			curcial_oj_send_key(BTN_MOUSE, pressed);
+		} else {
+#endif
+			input_event(ds->input_devs->dev[key_entry->dev],
+				ds->info->type, key_entry->code, pressed);
+			if (key_entry->code == SW_LID) {
+				if (ds->info->set_qty_irq)
+					ds->info->set_qty_irq(pressed);
+			}
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+		}
+#endif
 	}
 
 #if 0
@@ -172,13 +191,14 @@ static irqreturn_t gpio_event_input_irq_handler(int irq, void *dev_id)
 			ks->debounce = DEBOUNCE_UNKNOWN;
 			if (ds->debounce_count++ == 0) {
 				wake_lock(&ds->wake_lock);
+
 				hrtimer_start(
 					&ds->timer, ds->info->debounce_time,
 					HRTIMER_MODE_REL);
 			}
 			if (ds->info->flags & GPIOEDF_PRINT_KEY_DEBOUNCE)
 				pr_info("gpio_event_input_irq_handler: "
-					"key %x-%x, %d (%d) start debounce\n",
+					"key %d-%d, %d (%d) start debounce\n",
 					ds->info->type, key_entry->code,
 					keymap_index, key_entry->gpio);
 		} else {
@@ -190,12 +210,25 @@ static irqreturn_t gpio_event_input_irq_handler(int irq, void *dev_id)
 		pressed = gpio_get_value(key_entry->gpio) ^
 			!(ds->info->flags & GPIOEDF_ACTIVE_HIGH);
 		if (ds->info->flags & GPIOEDF_PRINT_KEYS)
-			pr_info("gpio_event_input_irq_handler: key %x-%x, %d "
+			pr_info("gpio_event_input_irq_handler: key %d-%d, %d "
 				"(%d) changed to %d\n",
 				ds->info->type, key_entry->code, keymap_index,
 				key_entry->gpio, pressed);
-		input_event(ds->input_devs->dev[key_entry->dev], ds->info->type,
-			    key_entry->code, pressed);
+
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+		if (ds->info->info.oj_btn && key_entry->code == BTN_MOUSE) {
+			curcial_oj_send_key(BTN_MOUSE, pressed);
+		} else {
+#endif
+			input_event(ds->input_devs->dev[key_entry->dev],
+				ds->info->type, key_entry->code, pressed);
+			if (key_entry->code == SW_LID) {
+				if (ds->info->set_qty_irq)
+					ds->info->set_qty_irq(pressed);
+			}
+#ifdef CONFIG_OPTICALJOYSTICK_CRUCIAL
+		}
+#endif
 	}
 	return IRQ_HANDLED;
 }
@@ -211,6 +244,7 @@ static int gpio_event_input_request_irqs(struct gpio_input_state *ds)
 		err = irq = gpio_to_irq(ds->info->keymap[i].gpio);
 		if (err < 0)
 			goto err_gpio_get_irq_num_failed;
+
 		err = request_irq(irq, gpio_event_input_irq_handler,
 				  req_flags, "gpio_keys", &ds->key_state[i]);
 		if (err) {
@@ -219,7 +253,8 @@ static int gpio_event_input_request_irqs(struct gpio_input_state *ds)
 				ds->info->keymap[i].gpio, irq);
 			goto err_request_irq_failed;
 		}
-		enable_irq_wake(irq);
+		if (ds->info->keymap[i].wakeup)
+			enable_irq_wake(irq);
 	}
 	return 0;
 
@@ -238,25 +273,65 @@ int gpio_event_input_func(struct gpio_event_input_devs *input_devs,
 {
 	int ret;
 	int i;
+	int err;
+	int irq;
 	unsigned long irqflags;
+	static int irq_status = 1;
 	struct gpio_event_input_info *di;
 	struct gpio_input_state *ds = *data;
 
 	di = container_of(info, struct gpio_event_input_info, info);
 
 	if (func == GPIO_EVENT_FUNC_SUSPEND) {
-		if (ds->use_irq)
-			for (i = 0; i < di->keymap_size; i++)
-				disable_irq(gpio_to_irq(di->keymap[i].gpio));
-		hrtimer_cancel(&ds->timer);
+		irq_status = (gpio_event_get_phone_call_status() & 0x01) ||
+			     (gpio_event_get_fm_radio_status() & 0x01);
+		pr_info("%s: set irq_status = %d\n", __func__, irq_status);
+
+		if (ds->use_irq) {
+			for (i = 0; i < di->keymap_size; i++) {
+				irq = gpio_to_irq(di->keymap[i].gpio);
+
+				if (di->keymap[i].check_call_status &&
+				    di->keymap[i].wakeup) {
+					if (irq_status)
+						break;
+
+					err = set_irq_wake(irq, irq_status);
+					if (err)
+						pr_info("gpioinput: set_irq_wake failed ,irq_status %d ,for input irq %d\n",  irq_status, irq);
+					else
+						pr_info("gpioinput: set_irq_wake(%d, %d)\n", irq, irq_status);
+				}
+			}
+		} else
+			hrtimer_cancel(&ds->timer);
+
 		return 0;
 	}
 	if (func == GPIO_EVENT_FUNC_RESUME) {
+		pr_info("%s: previous irq_status = %d\n", __func__, irq_status);
 		spin_lock_irqsave(&ds->irq_lock, irqflags);
-		if (ds->use_irq)
-			for (i = 0; i < di->keymap_size; i++)
-				enable_irq(gpio_to_irq(di->keymap[i].gpio));
-		hrtimer_start(&ds->timer, ktime_set(0, 0), HRTIMER_MODE_REL);
+
+		if (ds->use_irq) {
+			for (i = 0; i < di->keymap_size; i++) {
+				irq = gpio_to_irq(di->keymap[i].gpio);
+
+				if (di->keymap[i].check_call_status &&
+				    di->keymap[i].wakeup) {
+					if (irq_status)
+						break;
+
+					err = set_irq_wake(irq, 1);
+					if (err)
+						pr_info("gpioinput: set_irq_wake failed ,irq_status 1 ,for input irq %d\n", irq);
+					else
+						pr_info("gpioinput: set_irq_wake(%d, 1)\n", irq);
+				}
+			}
+			irq_status = 1;
+		} else
+			hrtimer_start(&ds->timer, ktime_set(0, 0), HRTIMER_MODE_REL);
+
 		spin_unlock_irqrestore(&ds->irq_lock, irqflags);
 		return 0;
 	}
@@ -310,6 +385,8 @@ int gpio_event_input_func(struct gpio_event_input_devs *input_devs,
 				goto err_gpio_configure_failed;
 			}
 		}
+		if (di->setup_input_gpio)
+			di->setup_input_gpio();
 
 		ret = gpio_event_input_request_irqs(ds);
 
@@ -324,13 +401,16 @@ int gpio_event_input_func(struct gpio_event_input_devs *input_devs,
 		hrtimer_init(&ds->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 		ds->timer.function = gpio_event_input_timer_func;
 		hrtimer_start(&ds->timer, ktime_set(0, 0), HRTIMER_MODE_REL);
+
 		spin_unlock_irqrestore(&ds->irq_lock, irqflags);
 		return 0;
 	}
 
 	ret = 0;
 	spin_lock_irqsave(&ds->irq_lock, irqflags);
+
 	hrtimer_cancel(&ds->timer);
+
 	if (ds->use_irq) {
 		for (i = di->keymap_size - 1; i >= 0; i--) {
 			free_irq(gpio_to_irq(di->keymap[i].gpio),

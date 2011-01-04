@@ -21,6 +21,30 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
+static unsigned char fm_radio_status;
+
+int gpio_event_get_fm_radio_status(void)
+{
+	return fm_radio_status;
+}
+
+static ssize_t fm_radio_store(struct device *dev,
+					 struct device_attribute *attr,
+					 const char *buf, size_t count)
+{
+	fm_radio_status = simple_strtoull(buf, NULL, 10);
+	pr_info("GPIO_EVENT:: fm_radio_status=%d\n", fm_radio_status);
+
+	return count;
+}
+static ssize_t fm_radio_show(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "fm_radio_status:%d\n", fm_radio_status);
+}
+
+static DEVICE_ATTR(fm_radio, 0666, fm_radio_show, fm_radio_store);
+
 struct gpio_event {
 	struct gpio_event_input_devs *input_devs;
 	const struct gpio_event_platform_data *info;
@@ -93,6 +117,7 @@ static int gpio_event_call_all_func(struct gpio_event *ip, int func)
 		ii--;
 		if ((func & ~1) == GPIO_EVENT_FUNC_SUSPEND && (*ii)->no_suspend)
 			continue;
+
 		(*ii)->func(ip->input_devs, *ii, &ip->state[i], func & ~1);
 err_func_failed:
 err_no_func:
@@ -119,7 +144,30 @@ void gpio_event_resume(struct early_suspend *h)
 }
 #endif
 
-static int gpio_event_probe(struct platform_device *pdev)
+static unsigned char phone_call_status;
+int gpio_event_get_phone_call_status(void)
+{
+	return phone_call_status;
+}
+
+static int phone_call_status_store(const char *val, struct kernel_param *kp)
+{
+	int enabled = simple_strtol(val, NULL, 0);
+	phone_call_status = enabled;
+	printk(KERN_INFO "%s: phone_call_status %d\n", __func__, enabled);
+
+	return 0;
+}
+
+static int phone_call_status_show(char *buffer, struct kernel_param *kp)
+{
+	buffer[0] = '0' + phone_call_status;
+	return 1;
+}
+
+module_param_call(phone_call_status, phone_call_status_store, phone_call_status_show, NULL, 0664);
+
+static int __init gpio_event_probe(struct platform_device *pdev)
 {
 	int err;
 	struct gpio_event *ip;
@@ -193,6 +241,8 @@ static int gpio_event_probe(struct platform_device *pdev)
 		registered++;
 	}
 
+	err = device_create_file(&(pdev->dev), &dev_attr_fm_radio);
+
 	return 0;
 
 err_input_register_device_failed:
@@ -230,6 +280,9 @@ static int gpio_event_remove(struct platform_device *pdev)
 	}
 	for (i = 0; i < ip->input_devs->count; i++)
 		input_unregister_device(ip->input_devs->dev[i]);
+
+	device_remove_file(&(pdev->dev), &dev_attr_fm_radio);
+
 	kfree(ip);
 	return 0;
 }
