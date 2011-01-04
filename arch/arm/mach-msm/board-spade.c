@@ -642,7 +642,6 @@ static void msm_marimba_shutdown_power(void)
 	}
 };
 
-/*
 static int fm_radio_setup(struct marimba_fm_platform_data *pdata)
 {
 	int rc;
@@ -722,7 +721,7 @@ static void fm_radio_shutdown(struct marimba_fm_platform_data *pdata)
 	if (rc < 0)
 		printk(KERN_ERR "%s: vreg level vote return val: %d \n",
 						__func__, rc);
-}
+};
 
 static struct marimba_fm_platform_data marimba_fm_pdata = {
 	.fm_setup =  fm_radio_setup,
@@ -731,13 +730,12 @@ static struct marimba_fm_platform_data marimba_fm_pdata = {
 	.vreg_s2 = NULL,
 	.vreg_xo_out = NULL,
 };
-*/
 
 /* Slave id address for FM/CDC/QMEMBIST
  * Values can be programmed using Marimba slave id 0
  * should there be a conflict with other I2C devices
  * */
-/*#define MARIMBA_SLAVE_ID_FM_ADDR	0x2A*/
+#define MARIMBA_SLAVE_ID_FM_ADDR	0x2A
 #define MARIMBA_SLAVE_ID_CDC_ADDR	0x77
 #define MARIMBA_SLAVE_ID_QMEMBIST_ADDR	0X66
 
@@ -840,7 +838,7 @@ static int marimba_tsadc_exit(void)
 			__func__, rc);
 
 	return rc;
-}
+};
 
 static struct marimba_tsadc_platform_data marimba_tsadc_pdata = {
 	.marimba_tsadc_power = marimba_tsadc_power,
@@ -903,12 +901,12 @@ static struct marimba_codec_platform_data mariba_codec_pdata = {
 };
 
 static struct marimba_platform_data marimba_pdata = {
-	/*.slave_id[MARIMBA_SLAVE_ID_FM]       = MARIMBA_SLAVE_ID_FM_ADDR,*/
+	.slave_id[MARIMBA_SLAVE_ID_FM]       = MARIMBA_SLAVE_ID_FM_ADDR,
 	.slave_id[MARIMBA_SLAVE_ID_CDC]	     = MARIMBA_SLAVE_ID_CDC_ADDR,
 	.slave_id[MARIMBA_SLAVE_ID_QMEMBIST] = MARIMBA_SLAVE_ID_QMEMBIST_ADDR,
 	.marimba_setup = msm_marimba_setup_power,
 	.marimba_shutdown = msm_marimba_shutdown_power,
-	/*.fm = &marimba_fm_pdata,*/
+	.fm = &marimba_fm_pdata,
 	.tsadc = &marimba_tsadc_pdata,
 	.codec = &mariba_codec_pdata,
 };

@@ -1,4 +1,4 @@
-/* Copyright (c) 2009, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -26,43 +26,63 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef __LINUX_MFD_MSM_MARIMBA_CODEC_H
-#define __LINUX_MFD_MSM_MARIMBA_CODEC_H
+/*
+ * Qualcomm Bahama Core Driver header file
+ */
 
-#include <mach/qdsp5v2/adie_marimba.h>
+#ifndef _BAHAMA_H
+#define _BAHAMA_H_
 
-struct adie_codec_register {
-	u8 reg;
-	u8 mask;
-	u8 val;
+#include <linux/types.h>
+#include <linux/i2c.h>
+
+#define BAHAMA_NUM_CHILD			1
+
+#define BAHAMA_SLAVE_ID_BAHAMA			0x00
+#define BAHAMA_SLAVE_ID_FM			0x01
+
+struct bahama{
+	struct i2c_client *client;
+
+	struct i2c_msg xfer_msg[2];
+
+	struct mutex xfer_lock;
+
+	int mod_id;
 };
 
-struct adie_codec_register_image {
-	struct adie_codec_register *regs;
-	u32 img_sz;
+struct bahama_top_level_platform_data{
+	int slave_id;     /* Member added for eg. */
 };
 
-struct adie_codec_path {
-	struct adie_codec_dev_profile *profile;
-	struct adie_codec_register_image img;
-	u32 hwsetting_idx;
-	u32 stage_idx;
-	u32 curr_stage;
+struct bahama_fm_platform_data{
+	int irq;
+	int (*fm_setup)(struct bahama_fm_platform_data *pdata);
+	void (*fm_shutdown)(struct bahama_fm_platform_data *pdata);
 };
 
-int marimba_adie_codec_open(struct adie_codec_dev_profile *profile,
-	struct adie_codec_path **path_pptr);
-int marimba_adie_codec_setpath(struct adie_codec_path *path_ptr,
-	u32 freq_plan, u32 osr);
-int marimba_adie_codec_proceed_stage(struct adie_codec_path *path_ptr, u32 state);
-int marimba_adie_codec_close(struct adie_codec_path *path_ptr);
-u32 marimba_adie_codec_freq_supported(struct adie_codec_dev_profile *profile,
-							u32 requested_freq);
-int marimba_adie_codec_enable_sidetone(struct adie_codec_path *rx_path_ptr, u32 enable);
+/*
+ * Bahama Platform Data
+ * */
+struct bahama_platform_data {
+	struct bahama_top_level_platform_data	*bahama_tp_level;
+	struct bahama_fm_platform_data		*fm;
+	u8 slave_id[BAHAMA_NUM_CHILD + 1];
+	int (*bahama_setup) (struct device *dev);
+	void (*bahama_shutdown) (struct device *dev);
+};
 
-int marimba_adie_codec_set_device_digital_volume(struct adie_codec_path *path_ptr,
-		u32 num_channels, u32 vol_percentage /* in percentage */);
+/*
+ * Read and Write to register
+ * */
+int bahama_read(struct bahama *, u8 reg, u8 *value, unsigned num_bytes);
+int bahama_write(struct bahama *, u8 reg, u8 *value, unsigned num_bytes);
 
-int marimba_adie_codec_set_device_analog_volume(struct adie_codec_path *path_ptr,
-		u32 num_channels, u32 volume /* in percentage */);
+/*
+ * Read and Write single 8 bit register with bit mask
+ * */
+int bahama_read_bit_mask(struct bahama *, u8 reg, u8 *value,
+					unsigned num_bytes, u8 mask);
+int bahama_write_bit_mask(struct bahama *, u8 reg, u8 *value,
+					unsigned num_bytes, u8 mask);
 #endif
